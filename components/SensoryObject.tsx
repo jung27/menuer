@@ -12,6 +12,7 @@ import { syncCardOverlay, type CardOverlayRefs } from "./card-overlay";
 import * as THREE from "three";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import type { Food, Tag } from "@/app/food-card/taste";
+import { SensoryAudio, soundForGesture, prepareSensoryAudio } from "@/lib/sensory-audio";
 
 // 실제 3D 입체 지오메트리 구조 타입 (단순 2D 텍스처가 아니라 메쉬의 3D 구조와 물리 자체가 다름!)
 export type SurfacePatternType =
@@ -407,84 +408,6 @@ function StudioEnvironment() {
     };
   }, [gl, scene]);
   return null;
-}
-
-function playSensorySound(
-  crack: number,
-  viscosity: number,
-  fluidity: number,
-  intensity: number,
-) {
-  if (typeof window === "undefined") return;
-  try {
-    const AudioCtx =
-      window.AudioContext ||
-      (window as unknown as { webkitAudioContext: typeof AudioContext })
-        .webkitAudioContext;
-    const ctx = new AudioCtx();
-    const now = ctx.currentTime;
-
-    if (crack > 0.35) {
-      const bufferSize = Math.floor(ctx.sampleRate * 0.085);
-      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-      const data = buffer.getChannelData(0);
-      for (let i = 0; i < bufferSize; i++) {
-        data[i] =
-          (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.022));
-      }
-      const noise = ctx.createBufferSource();
-      noise.buffer = buffer;
-
-      const filter = ctx.createBiquadFilter();
-      filter.type = "bandpass";
-      filter.frequency.setValueAtTime(
-        1150 + Math.random() * 850 + intensity * 500,
-        now,
-      );
-
-      const gain = ctx.createGain();
-      gain.gain.setValueAtTime(0.26, now);
-      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.085);
-
-      noise.connect(filter);
-      filter.connect(gain);
-      gain.connect(ctx.destination);
-      noise.start(now);
-    } else if (fluidity > 0.5) {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = "sine";
-      const baseFreq = 280 + Math.random() * 180;
-      osc.frequency.setValueAtTime(baseFreq, now);
-      osc.frequency.exponentialRampToValueAtTime(baseFreq * 2.1, now + 0.09);
-
-      gain.gain.setValueAtTime(0.2, now);
-      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
-
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(now);
-      osc.stop(now + 0.1);
-    } else {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = "sine";
-      const baseFreq = 150 + (1 - viscosity) * 110 + intensity * 120;
-      osc.frequency.setValueAtTime(baseFreq, now);
-      osc.frequency.exponentialRampToValueAtTime(baseFreq * 1.6, now + 0.06);
-      osc.frequency.exponentialRampToValueAtTime(baseFreq * 0.7, now + 0.17);
-
-      gain.gain.setValueAtTime(0.22, now);
-      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.18);
-
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(now);
-      osc.stop(now + 0.18);
-    }
-  } catch {
-    // 오디오 자동재생 제한 무시
-  }
 }
 
 const CARD_WIDTH = 1.62;
@@ -1381,6 +1304,7 @@ function buildRigidCardCrust(
 }
 
 interface InternalCardProps {
+  audioEnabled: boolean;
   config: Required<SensoryPhysicsProps>;
   food?: Food;
   presetLabel: string;
@@ -1392,6 +1316,7 @@ interface InternalCardProps {
 }
 
 function SensoryCard3D({
+  audioEnabled,
   config,
   food,
   presetLabel,
@@ -1402,6 +1327,12 @@ function SensoryCard3D({
   overlay,
 }: InternalCardProps) {
   const { camera, gl, size } = useThree();
+  const audio = useMemo(() => new SensoryAudio(), []);
+  useEffect(() => {
+    if (audioEnabled) audio.preload(config.pattern);
+    else audio.stop(true);
+    return () => audio.stop(true);
+  }, [audio, audioEnabled, config.pattern, food?.id]);
   const groupRef = useRef<THREE.Group>(null);
   const innerFleshRef = useRef<THREE.Mesh>(null);
   const innerMatRef = useRef<THREE.MeshPhysicalMaterial>(null);
@@ -1436,6 +1367,10 @@ function SensoryCard3D({
     hitHistory.current = [];
     touchHeat.current = 0;
     targetRotation.current = { x: 0.06, y: -0.14 };
+    interactionMode.current = "none";
+    targetDrag.current.set(0, 0, 0);
+    viscousDrag.current.set(0, 0, 0);
+    pressDepth.current = 0;
   }, [food?.id, randomSeed]);
 
   const hasCrust = config.crack > 0.05;
@@ -1634,17 +1569,13 @@ function SensoryCard3D({
     targetDrag.current.set(0, 0, 0);
     rippleEnergy.current = Math.min(1.3, rippleEnergy.current + 0.7);
     touchHeat.current = Math.min(1.0, touchHeat.current + 0.15);
-    playSensorySound(
-      config.crack,
-      config.viscosity,
-      config.fluidity,
-      touchHeat.current,
-    );
+    if (audioEnabled) audio.play(soundForGesture(config.pattern, false));
     onInteract(18);
   };
 
   const handleBackgroundPointerDown = (e: ThreeEvent<PointerEvent>) => {
     e.stopPropagation();
+    audio.stop();
     interactionMode.current = "rotate";
     prevPointerScreen.current = { x: e.clientX, y: e.clientY };
   };
@@ -1684,12 +1615,19 @@ function SensoryCard3D({
           const currentLocal = groupRef.current.worldToLocal(
             planeIntersect.current.clone(),
           );
-          targetDrag.current
-            .subVectors(currentLocal, targetHit.current)
-            .clampLength(0, config.maxStretch);
+          targetDrag.current.subVectors(currentLocal, targetHit.current);
+          const distance = targetDrag.current.length();
+          const limit = Math.max(0.01, config.maxStretch);
+          // Near the origin follow the finger, then progressively resist.
+          // The radial curve stays smooth in every direction and below the limit.
+          const resistance = 1 + config.viscosity * 0.35 - config.fluidity * 0.2;
+          if (distance > 0) {
+            const resistedDistance = limit * -Math.expm1(-distance / (limit * resistance));
+            targetDrag.current.multiplyScalar(resistedDistance / distance);
+          }
 
-          if (targetDrag.current.length() > 0.08) {
-            rippleEnergy.current = Math.min(1.1, rippleEnergy.current + 0.04);
+          if (targetDrag.current.length() > 0.02) {
+            if (audioEnabled) audio.play(soundForGesture(config.pattern, true));
             touchHeat.current = Math.min(1.0, touchHeat.current + 0.012);
             onInteract(1.2);
           }
@@ -1698,21 +1636,30 @@ function SensoryCard3D({
     };
 
     const handleWindowPointerUp = () => {
+      audio.stop();
       if (interactionMode.current !== "none") {
         interactionMode.current = "none";
         targetDrag.current.set(0, 0, 0);
       }
     };
 
+    const handleVisibility = () => {
+      if (document.hidden) handleWindowPointerUp();
+    };
+
     window.addEventListener("pointermove", handleWindowPointerMove);
     window.addEventListener("pointerup", handleWindowPointerUp);
     window.addEventListener("pointercancel", handleWindowPointerUp);
+    window.addEventListener("blur", handleWindowPointerUp);
+    document.addEventListener("visibilitychange", handleVisibility);
     return () => {
       window.removeEventListener("pointermove", handleWindowPointerMove);
       window.removeEventListener("pointerup", handleWindowPointerUp);
       window.removeEventListener("pointercancel", handleWindowPointerUp);
+      window.removeEventListener("blur", handleWindowPointerUp);
+      document.removeEventListener("visibilitychange", handleVisibility);
     };
-  }, [camera, gl, config.maxStretch, onInteract]);
+  }, [camera, gl, config.maxStretch, config.viscosity, config.fluidity, config.pattern, onInteract, audio, audioEnabled]);
 
   const dummy = useMemo(() => new THREE.Object3D(), []);
   const tempOut = useMemo(() => new THREE.Vector3(), []);
@@ -1761,6 +1708,7 @@ function SensoryCard3D({
       const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
       const inf = Math.max(0, 1 - dist / 1.38);
       const smoothInf = inf * inf * (3 - 2 * inf);
+      const dragCalm = 1 - THREE.MathUtils.smoothstep(viscousDrag.current.length(), 0.02, 0.15);
 
       const effectiveSquish = config.squish * (1 - config.hardness * 0.55);
 
@@ -1778,6 +1726,7 @@ function SensoryCard3D({
         const wave =
           Math.sin(dist * 7.5 - time * 14) *
           rippleEnergy.current *
+          dragCalm *
           effectiveSquish *
           0.04;
 
@@ -1800,7 +1749,7 @@ function SensoryCard3D({
         // 당기거나 만질 때 면발들이 좌우/앞뒤로 풀리며 꿈틀거리는 3D 웨이브
         const slither =
           Math.sin(by * 6.5 - time * 9 + groupId * 1.3) *
-          (viscousDrag.current.length() * 0.14 + rippleEnergy.current * 0.06) *
+          rippleEnergy.current * 0.06 * dragCalm *
           smoothInf;
         x += slither;
         z += Math.cos(by * 5.5 + groupId) * slither * 0.65;
@@ -1890,14 +1839,18 @@ function SensoryCard3D({
 
     viscousHit.current.lerp(targetHit.current, dt * followSpeed);
     if (isInteracting) {
-      viscousDrag.current.lerp(targetDrag.current, dt * followSpeed);
+      viscousDrag.current.lerp(targetDrag.current, 1 - Math.exp(-dt * followSpeed));
       pressDepth.current = THREE.MathUtils.lerp(
         pressDepth.current,
         1.0,
         dt * 10,
       );
     } else {
-      viscousDrag.current.lerp(new THREE.Vector3(0, 0, 0), dt * baseRestore);
+      // Ease back monotonically: resistance without recoil or oscillation.
+      viscousDrag.current.multiplyScalar(Math.exp(-dt * THREE.MathUtils.lerp(12, 7, config.viscosity)));
+      if (viscousDrag.current.lengthSq() < 0.000001) {
+        viscousDrag.current.set(0, 0, 0);
+      }
       pressDepth.current = THREE.MathUtils.lerp(
         pressDepth.current,
         0.0,
@@ -1933,7 +1886,8 @@ function SensoryCard3D({
       );
 
       const shakeAmt =
-        config.shake * (activeLevel * 0.032 + rippleEnergy.current * 0.055);
+        config.shake * (activeLevel * 0.032 + rippleEnergy.current * 0.055) *
+        (1 - THREE.MathUtils.smoothstep(viscousDrag.current.length(), 0.02, 0.15));
       groupRef.current.position.set(
         (Math.random() - 0.5) * shakeAmt,
         (Math.random() - 0.5) * shakeAmt,
@@ -2345,6 +2299,22 @@ export default function SensoryObject({
     [],
   );
   const [randomSeed, setRandomSeed] = useState(1);
+  const [audioEnabled, setAudioEnabled] = useState(true);
+  const [audioReady, setAudioReady] = useState(false);
+  const [audioFailed, setAudioFailed] = useState(false);
+  useEffect(() => {
+    let active = true;
+    void prepareSensoryAudio().then(() => {
+      if (active) setAudioReady(true);
+    }).catch(() => {
+      if (active) {
+        setAudioFailed(true);
+        setAudioEnabled(false);
+        setAudioReady(true);
+      }
+    });
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     setRandomSeed(Math.random() * 100 + 1);
@@ -2382,6 +2352,7 @@ export default function SensoryObject({
         />
 
         <SensoryCard3D
+          audioEnabled={audioEnabled}
           config={mergedConfig}
           food={food}
           presetLabel={SENSORY_PRESETS[preset].label}
@@ -2392,6 +2363,25 @@ export default function SensoryObject({
           overlay={overlay}
         />
       </Canvas>
+      {!audioReady && audioEnabled && (
+        <div role="status" className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-white/70 text-sm text-gray-600">
+          효과음 준비 중…
+        </div>
+      )}
+      <button
+        type="button"
+        aria-label={audioEnabled ? "효과음 끄기" : "효과음 켜기"}
+        aria-pressed={audioEnabled}
+        disabled={audioFailed}
+        onClick={() => setAudioEnabled(enabled => !enabled)}
+        className="absolute right-2 top-2 z-20 rounded-full bg-white/90 px-3 py-2 text-xs text-gray-700 shadow"
+      >
+        {audioFailed ? "음원 로딩 실패" : audioEnabled ? "소리 켜짐" : "소리 꺼짐"}
+      </button>
+      <a href="/sounds/credits.txt" target="_blank" rel="noopener noreferrer"
+        className="absolute bottom-1 right-2 z-20 text-[10px] text-gray-500 underline">
+        음원 출처
+      </a>
       {food && (
         <div
           ref={overlayViewport}
