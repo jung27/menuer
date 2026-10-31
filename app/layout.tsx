@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "메뉴얼",
+  title: "손마카세",
   description: "인톤 메뉴 추천 서비스",
 };
 

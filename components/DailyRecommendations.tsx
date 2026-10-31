@@ -47,9 +47,9 @@ export default function DailyRecommendations({
               <span className="mh-day-date">{day.date}</span>
               <span
                 aria-hidden
-                className="text-xl text-neutral-400 transition-transform group-open:-rotate-90"
+                className="mh-day-chevron text-neutral-400 group-open:-rotate-90"
               >
-                ‹
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" focusable="false"><path d="m15 6-6 6 6 6" /></svg>
               </span>
             </summary>
             <DailyShareButton day={day} feedback={shareFeedback.forButton(`${day.date}:day`, day.date)} />
@@ -60,7 +60,7 @@ export default function DailyRecommendations({
                   <li key={key} className="mh-meal-row">
                     <span className="mh-meal-time flex flex-col items-center text-xs text-neutral-500">
                       <MealIcon meal={key} />
-                      {label}
+                      <span className="mh-meal-label">{label}</span>
                     </span>
                     {day.date !== editableDate ? (
                       <div className="mh-meal-menu rounded-xl border border-neutral-200 text-neutral-700"><span className="mh-meal-name">{menu ?? "미선정"}</span></div>
@@ -74,9 +74,13 @@ export default function DailyRecommendations({
                           : "border-dashed border-neutral-300 text-neutral-500 hover:bg-neutral-50"
                       }`}
                     >
-                      {!menu && <span aria-hidden className="mh-meal-action text-neutral-400">+</span>}
+                      {!menu && <span aria-hidden className="mh-meal-action text-neutral-400">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" focusable="false"><path d="M12 5v14M5 12h14" /></svg>
+                      </span>}
                       <span className="mh-meal-name">{menu ?? "추천"}</span>
-                      {menu && <span aria-hidden className="mh-meal-action mh-meal-retry text-neutral-400">↻</span>}
+                      {menu && <span aria-hidden className="mh-meal-action mh-meal-retry text-neutral-400">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" focusable="false"><path d="M21 12a9 9 0 1 1-9-9 9 9 0 0 1 6.4 2.6L21 8M21 3v5h-5" /></svg>
+                      </span>}
                     </Link>}
                     {menu && (
                       <ShareButton

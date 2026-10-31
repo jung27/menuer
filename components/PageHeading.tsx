@@ -1,7 +1,8 @@
+import type { ReactNode } from "react";
 import Link from "next/link";
 
 export default function PageHeading({ title, id, backHref, backLabel }: {
-  title: string;
+  title: ReactNode;
   id?: string;
   backHref?: string;
   backLabel?: string;

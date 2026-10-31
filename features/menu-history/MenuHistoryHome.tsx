@@ -15,7 +15,7 @@ export default function MenuHistoryHome({
   return (
     <div className="mh-page" lang="ko">
       <main id="menu-history-content" className="mh-main">
-        <PageHeading id="menu-history-title" title="식사 기록" />
+        <PageHeading id="menu-history-title" title={<span className="mh-title-text">식사 기록</span>} />
         <DailyMenuList recommendationHref={recommendationHref} />
       </main>
     </div>

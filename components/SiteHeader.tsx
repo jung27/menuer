@@ -1,10 +1,13 @@
+import Image from "next/image";
 import Link from "next/link";
 import UserMenu from "./UserMenu";
 
 export function SiteBrand() {
-  return <Link href="/" className="site-brand" aria-label="메뉴얼 홈">
-    <span className="site-brand-mark" aria-hidden="true">m.</span>
-    <span>메뉴얼</span>
+  return <Link href="/" className="site-brand" aria-label="손마카세 홈">
+    <span className="site-brand-mark" aria-hidden="true">
+      <Image src="/brand/sonmakase.png" alt="" width={160} height={160} sizes="48px" draggable={false} />
+    </span>
+    <span className="site-brand-name">손마카세</span>
   </Link>;
 }
 
