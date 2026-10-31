@@ -24,6 +24,19 @@ const SHAKE_ACCEL = 10;
 const SHAKE_HOLD_MS = 300;
 const TICK_MS = 100;
 
+type Saved = { recordId: string; recommendations: Ranked[] };
+
+// "다시 고르기"로 들어오면(오늘 이미 고른 끼니) 그때 받은 추천 결과를 다시 보여 줌
+async function loadSaved(): Promise<Saved | null> {
+  const meal = new URLSearchParams(window.location.search).get("meal");
+  if (!meal) return null;
+  const today = await fetch("/api/selections/today", { cache: "no-store" }).then(readApiResponse);
+  const recordId = today.meals?.[meal]?.recordId;
+  if (!recordId) return null;
+  const { records } = await fetch(`/api/records?date=${today.date}`, { cache: "no-store" }).then(readApiResponse);
+  return (records as Saved[] | undefined)?.find((r) => r.recordId === recordId) ?? null;
+}
+
 // Next.js가 다른 페이지로 갔다 와도 화면 상태를 그대로 보존해서(cacheComponents),
 // 링크로 새로 들어올 때마다 카드부터 다시 시작하도록 bfcacheId로 초기화. 뒤로 가기에서는 그대로 유지됨.
 export default function FoodCard(props: { initialFoods: Food[] }) {
@@ -39,7 +52,12 @@ function Home({ initialFoods }: { initialFoods: Food[] }) {
   const [showInfo, setShowInfo] = useState(true);
   const [pos, setPos] = useState({ x: 0, y: 0 });
   const [finished, setFinished] = useState(false);
+  const [saved, setSaved] = useState<Saved | null | undefined>(undefined); // undefined = 확인 중
   const leaving = useRef(false);
+
+  useEffect(() => {
+    loadSaved().then(setSaved, () => setSaved(null));
+  }, []);
 
   const food: Food | undefined = foods[index];
   const done = finished || !food;
@@ -71,6 +89,9 @@ function Home({ initialFoods }: { initialFoods: Food[] }) {
     setFinished(false);
   }
 
+  if (saved === undefined) return <p className="p-8 text-center text-gray-500">불러오는 중...</p>;
+  if (saved)
+    return <Result taste={taste} saved={saved} onRestart={() => { setSaved(null); restart(); }} />;
   if (done) return <Result taste={taste} onRestart={restart} />;
 
   const gauge = toGauge(taste);
@@ -196,7 +217,7 @@ const API_KEYS = {
   바삭함: "crispy",
 } as const;
 
-function Result({ taste, onRestart }: { taste: Taste; onRestart: () => void }) {
+function Result({ taste, saved, onRestart }: { taste: Taste; saved?: Saved; onRestart: () => void }) {
   const router = useRouter();
   const [selectionContext, setSelectionContext] = useState<{
     recordId: string;
@@ -227,17 +248,23 @@ function Result({ taste, onRestart }: { taste: Taste; onRestart: () => void }) {
     let active = true;
     if (!pending.current || pending.current.attempt !== attempt) {
       requestId.current ??= crypto.randomUUID();
-      const promise = fetch("/api/recommendations", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          requestId: requestId.current,
-          tasteScores: JSON.parse(body),
-        }),
-      }).then(async (response) => {
-        const data = await readApiResponse(response);
-        if (!response.ok)
-          throw new Error(data.error?.message ?? "추천을 불러오지 못했어요.");
+      // 저장된 결과가 있으면 새로 추천받지 않고 그대로 사용
+      const recommend: Promise<Saved> = saved
+        ? Promise.resolve(saved)
+        : fetch("/api/recommendations", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              requestId: requestId.current,
+              tasteScores: JSON.parse(body),
+            }),
+          }).then(async (response) => {
+            const data = await readApiResponse(response);
+            if (!response.ok)
+              throw new Error(data.error?.message ?? "추천을 불러오지 못했어요.");
+            return data;
+          });
+      const promise = recommend.then(async (data) => {
         const todayResponse = await fetch("/api/selections/today", {
           cache: "no-store",
         });
@@ -279,7 +306,7 @@ function Result({ taste, onRestart }: { taste: Taste; onRestart: () => void }) {
     return () => {
       active = false;
     };
-  }, [body, attempt]);
+  }, [body, attempt, saved]);
 
   async function selectMenu(menuId: string) {
     if (!selectionContext || saveLock.current) return;
