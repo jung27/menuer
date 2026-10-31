@@ -25,7 +25,7 @@ export function MenuHistoryBrand() {
 
 export default function MenuHistoryHome({
   records = previewMenuHistory,
-  recommendationHref = "/menu-history/new",
+  recommendationHref = "/food-card",
 }: MenuHistoryHomeProps) {
   const history = sortMenuHistory(records);
 
