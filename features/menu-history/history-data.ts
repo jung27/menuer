@@ -30,7 +30,7 @@ export const previewMenuHistory: readonly MenuHistoryRecord[] = [
   },
   {
     id: "preview-4",
-    name: "등심 돈카츠",
+    name: "등심 돈가스",
     chosenAt: "2026-10-29T13:15:00+09:00",
     senses: ["바삭함 85%", "든든함 70%"],
   },
