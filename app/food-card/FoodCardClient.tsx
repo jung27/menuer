@@ -69,7 +69,7 @@ export default function Home({ initialFoods }: { initialFoods: Food[] }) {
   const gauge = toGauge(taste);
 
   return (
-    <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-3 p-4">
+    <main className="mx-auto flex w-full min-w-0 max-w-md flex-1 flex-col gap-3 overflow-x-clip p-4">
       {/* 외부로 드러나는 4대 물리 감각 특성(매운맛·바삭함·국물·기름짐)만 표시 */}
       <ul className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
         {VISIBLE_SENSORY_TAGS.map((t) => (

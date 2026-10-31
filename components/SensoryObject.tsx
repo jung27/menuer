@@ -13,6 +13,8 @@ import * as THREE from "three";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import type { Food, Tag } from "@/app/food-card/taste";
 import { SensoryAudio, soundForGesture, prepareSensoryAudio } from "@/lib/sensory-audio";
+import { foodSoundPattern } from "@/lib/food-sound";
+import { cardCameraDistance } from "@/lib/card-framing";
 
 // 실제 3D 입체 지오메트리 구조 타입 (단순 2D 텍스처가 아니라 메쉬의 3D 구조와 물리 자체가 다름!)
 export type SurfacePatternType =
@@ -1912,6 +1914,11 @@ function buildRigidCardCrust(
               pt.z * (1 - shellThickness * 2.2),
             ),
         );
+        // Close the underside with reversed winding so lifted shards remain
+        // solid from below. Use the plain texture region, without front labels.
+        for (let p = 1; p < innerPoly.length - 1; p++) {
+          pushTriangle(innerPoly[0], innerPoly[p + 1], innerPoly[p], myIdx, false);
+        }
         for (let p = 0; p < poly.length; p++) {
           const nextP = (p + 1) % poly.length;
           pushTriangle(poly[p], innerPoly[p], poly[nextP], myIdx, false);
@@ -1973,6 +1980,7 @@ function buildRigidCardCrust(
 }
 
 interface InternalCardProps {
+  soundPattern: string;
   audioEnabled: boolean;
   config: Required<SensoryPhysicsProps>;
   food?: Food;
@@ -1985,6 +1993,7 @@ interface InternalCardProps {
 }
 
 function SensoryCard3D({
+  soundPattern,
   audioEnabled,
   config,
   food,
@@ -1998,10 +2007,10 @@ function SensoryCard3D({
   const { camera, gl, size } = useThree();
   const audio = useMemo(() => new SensoryAudio(), []);
   useEffect(() => {
-    if (audioEnabled) audio.preload(config.pattern);
+    if (audioEnabled) audio.preload(soundPattern);
     else audio.stop(true);
     return () => audio.stop(true);
-  }, [audio, audioEnabled, config.pattern, food?.id]);
+  }, [audio, audioEnabled, soundPattern, food?.id]);
   const groupRef = useRef<THREE.Group>(null);
   const innerFleshRef = useRef<THREE.Mesh>(null);
   const innerMatRef = useRef<THREE.MeshPhysicalMaterial>(null);
@@ -2257,7 +2266,7 @@ function SensoryCard3D({
     targetDrag.current.set(0, 0, 0);
     rippleEnergy.current = Math.min(1.3, rippleEnergy.current + 0.7);
     touchHeat.current = Math.min(1.0, touchHeat.current + 0.15);
-    if (audioEnabled) audio.play(soundForGesture(config.pattern, false));
+    if (audioEnabled) audio.play(soundForGesture(soundPattern, false));
     onInteract(18);
   };
 
@@ -2315,7 +2324,7 @@ function SensoryCard3D({
           }
 
           if (targetDrag.current.length() > 0.02) {
-            if (audioEnabled) audio.play(soundForGesture(config.pattern, true));
+            if (audioEnabled) audio.play(soundForGesture(soundPattern, true));
             touchHeat.current = Math.min(1.0, touchHeat.current + 0.012);
             onInteract(1.2);
           }
@@ -2347,7 +2356,7 @@ function SensoryCard3D({
       window.removeEventListener("blur", handleWindowPointerUp);
       document.removeEventListener("visibilitychange", handleVisibility);
     };
-  }, [camera, gl, config.maxStretch, config.viscosity, config.fluidity, config.pattern, onInteract, audio, audioEnabled]);
+  }, [camera, gl, config.maxStretch, config.viscosity, config.fluidity, soundPattern, onInteract, audio, audioEnabled]);
 
   const dummy = useMemo(() => new THREE.Object3D(), []);
   const tempOut = useMemo(() => new THREE.Vector3(), []);
@@ -2591,6 +2600,22 @@ function SensoryCard3D({
 
       groupRef.current.rotation.x = currentRotation.current.x;
       groupRef.current.rotation.y = currentRotation.current.y;
+      // Fixed camera distance clips the card in narrow/mobile previews. Fit the
+      // rotated, inflated and stretched envelope to the actual canvas dimensions.
+      if (camera instanceof THREE.PerspectiveCamera && size.width > 0 && size.height > 0) {
+        groupRef.current.updateMatrix();
+        const m = groupRef.current.matrix.elements;
+        const drag = viscousDrag.current;
+        const hx = CARD_WIDTH / 2 + 0.12 + Math.abs(drag.x) * 1.8;
+        const hy = CARD_HEIGHT / 2 + 0.12 + Math.abs(drag.y) * 1.8;
+        const hz = CARD_DEPTH / 2 + 0.16 + Math.abs(drag.z) * 1.8;
+        const width = Math.abs(m[0]) * hx + Math.abs(m[4]) * hy + Math.abs(m[8]) * hz;
+        const height = Math.abs(m[1]) * hx + Math.abs(m[5]) * hy + Math.abs(m[9]) * hz;
+        const depth = Math.abs(m[2]) * hx + Math.abs(m[6]) * hy + Math.abs(m[10]) * hz;
+        const distance = cardCameraDistance(width, height, depth, size.width / size.height, camera.fov);
+        camera.position.z = Math.max(distance, THREE.MathUtils.lerp(camera.position.z, distance, 1 - Math.exp(-dt * 6)));
+        camera.updateMatrixWorld();
+      }
     }
 
     if (config.redness > 0.1) {
@@ -2827,10 +2852,12 @@ function SensoryCard3D({
             emissiveIntensity={
               config.redness > 0.4 ? config.redness * 0.2 : hasCrust ? 0.15 : 0
             }
-            roughness={hasCrust ? 0.16 : config.roughness}
-            metalness={0.04}
-            clearcoat={hasCrust ? 0.95 : config.glossiness}
-            clearcoatRoughness={0.06}
+            roughness={innerPattern === "meat" ? Math.max(0.62, config.roughness) : hasCrust ? 0.16 : config.roughness}
+            metalness={innerPattern === "meat" ? 0 : 0.04}
+            clearcoat={innerPattern === "meat" ? Math.min(0.12, config.glossiness) : hasCrust ? 0.95 : config.glossiness}
+            clearcoatRoughness={innerPattern === "meat" ? 0.65 : 0.06}
+            envMapIntensity={innerPattern === "meat" ? 0.3 : 1}
+            specularIntensity={innerPattern === "meat" ? 0.25 : 1}
             ior={1.45}
           />
         </mesh>
@@ -2849,10 +2876,12 @@ function SensoryCard3D({
               map={surfaceAtlas?.colorMap ?? null}
               bumpMap={surfaceAtlas?.bumpMap ?? null}
               bumpScale={0.05}
-              roughness={config.roughness}
-              metalness={0.05}
-              clearcoat={config.glossiness}
-              clearcoatRoughness={Math.max(0.05, config.roughness * 0.4)}
+              roughness={config.pattern === "meat" ? Math.max(0.62, config.roughness) : config.roughness}
+              metalness={config.pattern === "meat" ? 0 : 0.05}
+              clearcoat={config.pattern === "meat" ? Math.min(0.12, config.glossiness) : config.glossiness}
+              clearcoatRoughness={config.pattern === "meat" ? 0.65 : Math.max(0.05, config.roughness * 0.4)}
+              envMapIntensity={config.pattern === "meat" ? 0.3 : 1}
+              specularIntensity={config.pattern === "meat" ? 0.25 : 1}
               ior={1.45}
             />
           </mesh>
@@ -3042,6 +3071,7 @@ export default function SensoryObject({
         />
 
         <SensoryCard3D
+          soundPattern={foodSoundPattern(food?.name, mergedConfig.pattern, customConfig?.pattern)}
           audioEnabled={audioEnabled}
           config={mergedConfig}
           food={food}
