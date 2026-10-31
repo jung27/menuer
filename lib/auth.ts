@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 import { getDatabase } from "@/lib/mongodb";
 import { failureResponse, type Operation } from "./server-failure";
 
-type User = { _id: string; email: string; nickname: string; passwordHash: string; createdAt: Date };
+type User = { _id: string; email: string; nickname: string; passwordHash: string; createdAt: Date; avatar?: string };
 type Session = { _id: string; userId: string; expiresAt: Date };
 type Attempt = { _id: string; count: number; expiresAt: Date };
 const COOKIE = "menuer_session";
@@ -94,7 +94,7 @@ async function limitAttempts(email: string) {
   if (!result || result.count > 10) throw new AuthError(429, "TOO_MANY_ATTEMPTS", "시도가 너무 많아요. 15분 후 다시 시도해주세요.");
 }
 export function publicUser(user: User) {
-  return { id: user._id, email: user.email, nickname: user.nickname };
+  return { id: user._id, email: user.email, nickname: user.nickname, avatar: user.avatar ?? null };
 }
 async function createSession(userId: string) {
   const db = await authDatabase();
@@ -150,4 +150,20 @@ export async function logout() {
     await db.collection<Session>("sessions").deleteOne({ _id: hash(token) });
   }
   store.set(COOKIE, "", { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/", maxAge: 0 });
+}
+// 프로필 사진: 브라우저에서 256px WEBP로 줄인 data URL만 저장. null이면 삭제.
+export async function setAvatar(userId: string, image: unknown) {
+  const db = await authDatabase();
+  if (image === null) {
+    await db.collection<User>("users").updateOne({ _id: userId }, { $unset: { avatar: "" } });
+    return null;
+  }
+  const prefix = "data:image/webp;base64,";
+  const bytes = typeof image === "string" && image.startsWith(prefix) && image.length <= 150000
+    ? Buffer.from(image.slice(prefix.length), "base64") : null;
+  if (!bytes || bytes.toString("ascii", 0, 4) !== "RIFF" || bytes.toString("ascii", 8, 12) !== "WEBP") {
+    throw new AuthError(400, "INVALID_IMAGE", "사진 파일을 다시 선택해주세요.");
+  }
+  await db.collection<User>("users").updateOne({ _id: userId }, { $set: { avatar: image as string } });
+  return image as string;
 }

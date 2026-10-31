@@ -19,14 +19,14 @@ export async function saveFood(draft: CustomFoodDraft, id?: string) {
   notifyFoodsChanged();
   return result;
 }
-export async function imageFromFile(file: File): Promise<string> {
+export async function imageFromFile(file: File, maxSide = 512): Promise<string> {
   if (!["image/png", "image/jpeg", "image/webp"].includes(file.type) || file.size > 8 * 1024 * 1024) throw new Error("PNG, JPG, WEBP 파일을 8MB 이하로 선택해주세요.");
   const url = URL.createObjectURL(file);
   try {
     const image = new Image();
     await new Promise<void>((resolve, reject) => { image.onload = () => resolve(); image.onerror = () => reject(new Error("그림을 읽지 못했어요.")); image.src = url; });
     if (image.naturalWidth * image.naturalHeight > 25000000) throw new Error("그림의 크기를 줄여서 다시 선택해주세요.");
-    const scale = Math.min(1, 512 / Math.max(image.naturalWidth, image.naturalHeight));
+    const scale = Math.min(1, maxSide / Math.max(image.naturalWidth, image.naturalHeight));
     const canvas = document.createElement("canvas");
     canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
     canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
