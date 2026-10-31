@@ -81,9 +81,10 @@
   .mh-day-date { font-size: 14px; }
   .mh-daily-list details > ul { padding: 0 16px 20px; }
   .mh-meals { gap: 16px; }
-  .mh-meal-row { grid-template-columns: 36px minmax(0, 1fr); column-gap: 12px; }
-  .mh-meal-menu { padding: 11px 12px; font-size: 15px; }
-  .mh-meal-share { grid-column: 2; padding: 8px 12px; font-size: 12px; }
+  .mh-meal-row { grid-template-columns: 32px minmax(0, 1fr) auto; column-gap: 8px; }
+  .mh-meal-menu { gap: 6px; padding: 11px 8px; font-size: 15px; }
+  .mh-meal-action { flex-basis: 16px; font-size: 18px; }
+  .mh-meal-share { grid-column: 3; min-height: 50px; padding: 8px; font-size: 12px; }
   .mh-add-menu { min-height: 70px; padding: 20px; gap: 12px; border-radius: 14px; }
   .mh-add-title { font-size: 17px; }
   .mh-add-icon { font-size: 25px; width: 24px; }

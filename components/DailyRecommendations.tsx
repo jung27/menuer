@@ -82,7 +82,7 @@ export default function DailyRecommendations({
                     {menu && (
                       <ShareButton
                         menu={menu}
-                        label="음식 공유"
+                        label="공유"
                         feedback={shareFeedback.forButton(`${day.date}:${key}`, day.date)}
                         className="mh-meal-share rounded-xl border border-neutral-300 px-3 py-3 text-sm text-neutral-600 hover:bg-neutral-50"
                       />
