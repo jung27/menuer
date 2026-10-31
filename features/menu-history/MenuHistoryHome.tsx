@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { DailyMenus } from "@/components/DailyRecommendations";
+import UserMenu from "@/components/UserMenu";
 import DailyMenuList from "./DailyMenuList";
 import { previewDailyMenus } from "./daily-menu-data";
 import "./MenuHistoryHome.css";
@@ -28,6 +29,7 @@ export default function MenuHistoryHome({
       <header className="mh-header">
         <div className="mh-header-inner">
           <MenuHistoryBrand />
+          <UserMenu />
         </div>
       </header>
 

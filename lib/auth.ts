@@ -70,8 +70,8 @@ function credentials(body: Record<string, unknown>, signup: boolean) {
   if (typeof body.email !== "string" || body.email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.email.trim())) {
     throw new AuthError(400, "INVALID_INPUT", "이메일 형식을 확인해주세요.");
   }
-  if (typeof body.password !== "string" || body.password.length < (signup ? 15 : 1) || body.password.length > 128) {
-    throw new AuthError(400, "INVALID_INPUT", signup ? "비밀번호는 15~128자로 입력해주세요." : "비밀번호를 확인해주세요.");
+  if (typeof body.password !== "string" || body.password.length < (signup ? 10 : 1) || body.password.length > 128) {
+    throw new AuthError(400, "INVALID_INPUT", signup ? "비밀번호는 10~128자로 입력해주세요." : "비밀번호를 확인해주세요.");
   }
   return { email: body.email.trim().toLowerCase(), password: body.password };
 }
