@@ -8,7 +8,7 @@ import React, {
   useState,
 } from "react";
 import { Canvas, useFrame, useThree, ThreeEvent } from "@react-three/fiber";
-import { Html } from "@react-three/drei";
+import { syncCardOverlay, type CardOverlayRefs } from "./card-overlay";
 import * as THREE from "three";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import type { Food, Tag } from "@/app/food-card/taste";
@@ -679,6 +679,7 @@ interface InternalCardProps {
   value: number;
   randomSeed: number;
   onInteract: (delta: number) => void;
+  overlay: CardOverlayRefs;
 }
 
 const STAT_BADGE_COLORS: Record<Tag, string> = {
@@ -696,8 +697,9 @@ function SensoryCard3D({
   value,
   randomSeed,
   onInteract,
+  overlay,
 }: InternalCardProps) {
-  const { camera, gl } = useThree();
+  const { camera, gl, size } = useThree();
   const groupRef = useRef<THREE.Group>(null);
   const textOverlayGroupRef = useRef<THREE.Group>(null);
   const innerFleshRef = useRef<THREE.Mesh>(null);
@@ -1142,6 +1144,7 @@ function SensoryCard3D({
         viscousDrag.current.x * 0.18,
         -viscousDrag.current.x * 0.08,
       );
+      syncCardOverlay(overlay, textOverlayGroupRef.current, camera, size);
     }
 
     // 매운 음식(redness)은 만질수록 더 붉게 달아오름
@@ -1336,13 +1339,6 @@ function SensoryCard3D({
   const hasCrust = config.crack > 0.05;
   const innerColor = hasCrust ? config.crackColor : config.baseColor;
 
-  // 표시할 상위 음식 스탯 추출 (값이 0보다 큰 스탯들)
-  const foodStats = useMemo(() => {
-    if (!food) return [];
-    return (Object.entries(food.tags) as Array<[Tag, number]>)
-      .filter(([, v]) => v > 0)
-      .sort((a, b) => b[1] - a[1]);
-  }, [food]);
 
   return (
     <>
@@ -1402,61 +1398,7 @@ function SensoryCard3D({
           <group
             ref={textOverlayGroupRef}
             position={[0, 0, CARD_DEPTH * 0.56]}
-          >
-            <Html
-              transform
-              distanceFactor={2.6}
-              center
-              style={{
-                pointerEvents: "none",
-                userSelect: "none",
-                width: "210px",
-              }}
-            >
-              <div className="flex flex-col justify-between h-[285px] p-3.5 rounded-2xl text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.65)]">
-                {/* 상단: 음식 이름 */}
-                <div className="text-center bg-black/35 backdrop-blur-md rounded-xl py-2 px-3 border border-white/20">
-                  <h2 className="text-2xl font-extrabold tracking-tight leading-tight">
-                    {food.name}
-                  </h2>
-                  <p className="text-[10px] text-white/80 mt-0.5 font-medium">
-                    카드를 누르거나 당겨 감각을 느껴보세요
-                  </p>
-                </div>
-
-                {/* 하단: 음식 스탯 게이지 & 뱃지 */}
-                <div className="bg-black/45 backdrop-blur-md rounded-xl p-2.5 border border-white/15 flex flex-col gap-1.5">
-                  {foodStats.length > 0 ? (
-                    foodStats.map(([tag, val]) => {
-                      const pct = Math.round(val * 100);
-                      return (
-                        <div key={tag} className="flex items-center gap-1.5 text-[11px]">
-                          <span
-                            className={`px-1.5 py-0.5 rounded font-bold text-[10px] shrink-0 ${STAT_BADGE_COLORS[tag]}`}
-                          >
-                            {tag}
-                          </span>
-                          <div className="flex-1 h-1.5 bg-white/20 rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-white rounded-full"
-                              style={{ width: `${pct}%` }}
-                            />
-                          </div>
-                          <span className="font-mono font-bold text-[10px] w-7 text-right">
-                            {pct}%
-                          </span>
-                        </div>
-                      );
-                    })
-                  ) : (
-                    <p className="text-center text-xs text-white/75">
-                      담백한 기본 스탯
-                    </p>
-                  )}
-                </div>
-              </div>
-            </Html>
-          </group>
+          />
         )}
 
         {/* 바삭한 껍질 파편 파티클 */}
@@ -1512,6 +1454,61 @@ function SensoryCard3D({
   );
 }
 
+function FoodLabel({ food }: { food: Food }) {
+  // 표시할 상위 음식 스탯 추출 (값이 0보다 큰 스탯들)
+  const foodStats = useMemo(() => {
+    return (Object.entries(food.tags) as Array<[Tag, number]>)
+      .filter(([, v]) => v > 0)
+      .sort((a, b) => b[1] - a[1]);
+  }, [food]);
+
+  return (
+    <div className="flex flex-col justify-between h-[285px] p-3.5 rounded-2xl text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.65)]">
+      {/* 상단: 음식 이름 */}
+      <div className="text-center bg-black/35 backdrop-blur-md rounded-xl py-2 px-3 border border-white/20">
+        <h2 className="text-2xl font-extrabold tracking-tight leading-tight">
+          {food.name}
+        </h2>
+        <p className="text-[10px] text-white/80 mt-0.5 font-medium">
+          카드를 누르거나 당겨 감각을 느껴보세요
+        </p>
+      </div>
+
+      {/* 하단: 음식 스탯 게이지 & 뱃지 */}
+      <div className="bg-black/45 backdrop-blur-md rounded-xl p-2.5 border border-white/15 flex flex-col gap-1.5">
+        {foodStats.length > 0 ? (
+          foodStats.map(([tag, val]) => {
+            const pct = Math.round(val * 100);
+            return (
+              <div key={tag} className="flex items-center gap-1.5 text-[11px]">
+                <span
+                  className={`px-1.5 py-0.5 rounded font-bold text-[10px] shrink-0 ${STAT_BADGE_COLORS[tag]}`}
+                >
+                  {tag}
+                </span>
+                <div className="flex-1 h-1.5 bg-white/20 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-white rounded-full"
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+                <span className="font-mono font-bold text-[10px] w-7 text-right">
+                  {pct}%
+                </span>
+              </div>
+            );
+          })
+        ) : (
+          <p className="text-center text-xs text-white/75">
+            담백한 기본 스탯
+          </p>
+        )}
+      </div>
+    </div>
+
+  );
+}
+
 export interface SensoryCanvasCardProps {
   food?: Food;
   preset?: SensoryPresetType;
@@ -1527,6 +1524,10 @@ export default function SensoryObject({
   value,
   onChange,
 }: SensoryCanvasCardProps) {
+  const overlayViewport = useRef<HTMLDivElement>(null);
+  const overlayCamera = useRef<HTMLDivElement>(null);
+  const overlayObject = useRef<HTMLDivElement>(null);
+  const overlay = useMemo(() => ({ viewport: overlayViewport, camera: overlayCamera, object: overlayObject }), []);
   const [randomSeed, setRandomSeed] = useState(1);
 
   useEffect(() => {
@@ -1570,8 +1571,18 @@ export default function SensoryObject({
           value={value}
           randomSeed={randomSeed}
           onInteract={handleInteract}
+          overlay={overlay}
         />
       </Canvas>
+      {food && (
+        <div ref={overlayViewport} className="absolute inset-0 overflow-hidden pointer-events-none select-none" style={{ visibility: "hidden" }}>
+          <div ref={overlayCamera} className="absolute inset-0" style={{ transformStyle: "preserve-3d" }}>
+            <div ref={overlayObject} className="absolute left-0 top-0" style={{ transformStyle: "preserve-3d" }}>
+              <div style={{ width: "210px" }}><FoodLabel food={food} /></div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
