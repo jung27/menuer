@@ -359,23 +359,27 @@ function Result({ taste, saved, foods, onRestart, restartPending, restartError }
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 p-4">
       <h1 className="text-center text-xl font-bold">오늘의 추천 메뉴</h1>
       {selectionContext && (
-        <label className="flex items-center justify-center gap-3 text-sm">
+        <label className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-sm">
           {selectionContext.date}
-          <select
-            aria-label="선정할 끼니"
-            disabled={saving || restartPending}
-            value={selectionContext.meal}
-            onChange={(event) =>
-              setSelectionContext({
-                ...selectionContext,
-                meal: event.target.value,
-              })
-            }
-          >
-            <option value="breakfast">아침</option>
-            <option value="lunch">점심</option>
-            <option value="dinner">저녁</option>
-          </select>
+          <span className="relative inline-flex shrink-0 items-center">
+            <select
+              aria-label="선정할 끼니"
+              className="min-h-11 min-w-20 cursor-pointer appearance-none rounded-lg bg-transparent py-2 pl-3 pr-8 text-base leading-relaxed focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500 disabled:cursor-default disabled:opacity-50"
+              disabled={saving || restartPending}
+              value={selectionContext.meal}
+              onChange={(event) =>
+                setSelectionContext({
+                  ...selectionContext,
+                  meal: event.target.value,
+                })
+              }
+            >
+              <option value="breakfast">아침</option>
+              <option value="lunch">점심</option>
+              <option value="dinner">저녁</option>
+            </select>
+            <svg aria-hidden="true" className="pointer-events-none absolute right-2 size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+          </span>
         </label>
       )}
       {saveError && (

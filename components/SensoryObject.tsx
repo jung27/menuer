@@ -2972,9 +2972,9 @@ function FoodLabel({ food }: { food: Food }) {
           foodStats.map(([tag, val]) => {
             const pct = Math.round(val * 100);
             return (
-              <div key={tag} className="flex items-center gap-1.5 text-[11px]">
+              <div key={tag} className="flex items-center gap-1.5 text-[13px]">
                 <span
-                  className={`px-1.5 py-0.5 rounded font-bold text-[10px] shrink-0 ${STAT_HEX_COLORS[tag]}`}
+                  className={`px-1.5 py-0.5 rounded font-bold text-xs shrink-0 ${STAT_HEX_COLORS[tag]}`}
                 >
                   {tag}
                 </span>
@@ -2984,7 +2984,7 @@ function FoodLabel({ food }: { food: Food }) {
                     style={{ width: `${pct}%` }}
                   />
                 </div>
-                <span className="font-mono font-bold text-[10px] w-7 text-right">
+                <span className="font-mono font-bold text-xs w-9 shrink-0 text-right">
                   {pct}%
                 </span>
               </div>

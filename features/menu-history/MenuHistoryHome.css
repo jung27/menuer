@@ -25,7 +25,7 @@
 .mh-meal-time { grid-column: 1; white-space: nowrap; }
 .mh-meal-menu { grid-column: 2; display: flex; align-items: center; gap: 8px; min-width: 0; min-height: 50px; padding: 12px 16px; line-height: 1.6; }
 .mh-meal-row:not(:has(.mh-meal-share)) .mh-meal-menu { grid-column: 2 / -1; }
-.mh-meal-action { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 20px; font-size: 20px; line-height: 1; }
+.mh-meal-action { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 20px; font-size: 22px; line-height: 1; }
 .mh-meal-retry { margin-left: auto; }
 .mh-meal-name { min-width: 0; word-break: keep-all; overflow-wrap: anywhere; text-wrap: pretty; }
 .mh-meal-share { grid-column: 3; justify-self: end; display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; padding: 0; cursor: pointer; }
@@ -44,60 +44,60 @@
 .mh-add-menu:hover { background: var(--control); }
 .mh-add-menu:active { transform: scale(.995); }
 .mh-add-icon { display: grid; place-items: center; width: 28px; height: 28px; flex-shrink: 0; font-size: 27px; line-height: 1; font-weight: 400; }
-.mh-add-title { font-size: 18px; font-weight: 600; letter-spacing: -.5px; }
+.mh-add-title { font-size: 20px; font-weight: 600; letter-spacing: -.5px; }
 .mh-add-arrow { width: 21px; height: 21px; margin-left: auto; flex-shrink: 0; }
 .mh-history-section { margin-top: 36px; }
 .mh-section-heading { margin-bottom: 16px; }
-.mh-section-heading h2 { margin: 0; color: var(--muted); font-size: 13px; font-weight: 500; letter-spacing: -.2px; }
+.mh-section-heading h2 { margin: 0; color: var(--muted); font-size: 15px; font-weight: 500; letter-spacing: -.2px; }
 .mh-history-list { display: grid; gap: 12px; list-style: none; padding: 0; margin: 0; }
 .mh-history-card { display: grid; grid-template-columns: 128px minmax(0, 1fr) 120px; align-items: center; column-gap: 30px; padding: 22px 26px; background: var(--paper); border: 1px solid var(--line); border-radius: 16px; }
 .mh-date-column { display: flex; flex-direction: column; justify-content: center; gap: 6px; font-variant-numeric: tabular-nums; }
-.mh-date-number { font-size: 25px; font-weight: 500; letter-spacing: -.8px; line-height: 1.2; }
-.mh-date-detail { font-size: 11px; color: var(--muted); }
+.mh-date-number { font-size: 27px; font-weight: 500; letter-spacing: -.8px; line-height: 1.2; }
+.mh-date-detail { font-size: 13px; color: var(--muted); }
 .mh-menu-column { min-width: 0; }
-.mh-menu-column h3 { margin: 0; font-size: 20px; line-height: 1.5; font-weight: 500; letter-spacing: -.5px; overflow-wrap: anywhere; }
+.mh-menu-column h3 { margin: 0; font-size: 22px; line-height: 1.5; font-weight: 500; letter-spacing: -.5px; overflow-wrap: anywhere; }
 .mh-photo { position: relative; width: 120px; height: 80px; border-radius: 10px; background: var(--control); overflow: hidden; }
 .mh-food-image { object-fit: cover; }
 .mh-photo-placeholder { display: grid; place-items: center; width: 100%; height: 100%; color: #b5b5b5; }
-.mh-empty-state { padding: 58px 20px; border: 1px solid var(--line); border-radius: 16px; text-align: center; color: var(--muted); font-size: 14px; }
+.mh-empty-state { padding: 58px 20px; border: 1px solid var(--line); border-radius: 16px; text-align: center; color: var(--muted); font-size: 16px; }
 
 /* Existing recommendation entry placeholder. */
-.mh-header-caption { font-size: 13px; color: var(--muted); letter-spacing: -.2px; }
-.mh-eyebrow { color: var(--muted); font-size: 12px; font-weight: 600; letter-spacing: 1px; }
+.mh-header-caption { font-size: 15px; color: var(--muted); letter-spacing: -.2px; }
+.mh-eyebrow { color: var(--muted); font-size: 14px; font-weight: 600; letter-spacing: 1px; }
 .mh-entry-main { width: 100%; max-width: var(--site-width); margin: 0 auto; padding: var(--site-main-top) var(--site-gutter) var(--site-main-bottom); }
-.mh-back-link { display: inline-flex; min-height: 44px; align-items: center; color: var(--muted); font-size: 14px; }
+.mh-back-link { display: inline-flex; min-height: 44px; align-items: center; color: var(--muted); font-size: 16px; }
 .mh-entry-card { max-width: 600px; margin: 28px auto 0; padding: 58px 38px; text-align: center; border: 1px solid var(--line); border-radius: 28px; background: var(--paper); }
 .mh-entry-mark { display: grid; place-items: center; width: 64px; height: 64px; margin: 0 auto 26px; border-radius: 23px; color: var(--ink); background: var(--control); font-size: 33px; }
 .mh-entry-card h1 { margin-top: 15px; font-size: 33px; line-height: 1.5; font-weight: 700; letter-spacing: -1px; }
-.mh-entry-description { margin-top: 18px; color: var(--muted); font-size: 15px; line-height: 1.9; }
-.mh-return-button { display: inline-flex; justify-content: center; align-items: center; gap: 24px; margin-top: 30px; padding: 15px 25px; color: var(--ink); background: var(--control); border-radius: 12px; font-size: 14px; font-weight: 600; min-height: 48px; }
+.mh-entry-description { margin-top: 18px; color: var(--muted); font-size: 17px; line-height: 1.9; }
+.mh-return-button { display: inline-flex; justify-content: center; align-items: center; gap: 24px; margin-top: 30px; padding: 15px 25px; color: var(--ink); background: var(--control); border-radius: 12px; font-size: 16px; font-weight: 600; min-height: 48px; }
 .mh-return-button:hover { background: #eee; }
 @media (max-width: 760px) {
   .mh-history-card { grid-template-columns: 100px minmax(0, 1fr) 96px; column-gap: 22px; }
   .mh-photo { width: 96px; height: 72px; }
-  .mh-menu-column h3 { font-size: 18px; }
+  .mh-menu-column h3 { font-size: 20px; }
 }
 @media (max-width: 600px) {
   .mh-daily-list summary { padding: 18px 16px; }
-  .mh-day-date { font-size: 14px; }
+  .mh-day-date { font-size: 16px; }
   .mh-daily-list details > ul { padding: 0 16px 20px; }
   .mh-meals { gap: 16px; }
   .mh-meal-row { grid-template-columns: 32px minmax(0, 1fr) auto; column-gap: 8px; }
-  .mh-meal-menu { gap: 6px; padding: 11px 8px; font-size: 15px; }
-  .mh-meal-action { flex-basis: 16px; font-size: 18px; }
+  .mh-meal-menu { gap: 6px; padding: 11px 8px; font-size: 17px; }
+  .mh-meal-action { flex-basis: 16px; font-size: 20px; }
   .mh-add-menu { min-height: 70px; padding: 20px; gap: 12px; border-radius: 14px; }
-  .mh-add-title { font-size: 17px; }
-  .mh-add-icon { font-size: 25px; width: 24px; }
+  .mh-add-title { font-size: 19px; }
+  .mh-add-icon { font-size: 27px; width: 24px; }
   .mh-add-arrow { width: 19px; }
   .mh-history-section { margin-top: 28px; }
   .mh-section-heading { margin-bottom: 14px; }
   .mh-history-card { grid-template-columns: 60px minmax(0, 1fr) 64px; column-gap: 10px; padding: 18px 16px; border-radius: 14px; }
-  .mh-date-number { font-size: 21px; }
-  .mh-date-detail { font-size: 10px; }
-  .mh-menu-column h3 { font-size: 16px; }
+  .mh-date-number { font-size: 23px; }
+  .mh-date-detail { font-size: 12px; }
+  .mh-menu-column h3 { font-size: 18px; }
   .mh-photo { width: 64px; height: 58px; border-radius: 8px; }
   .mh-photo-placeholder svg { width: 23px; height: 23px; }
-  .mh-header-caption { font-size: 10px; }
+  .mh-header-caption { font-size: 12px; }
   .mh-entry-card { margin-top: 18px; padding: 40px 20px; }
   .mh-entry-card h1 { font-size: 27px; }
 }
