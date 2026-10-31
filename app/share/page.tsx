@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { FOODS } from "@/app/food-card/foods";
+import { RECOMMENDATION_FOODS } from "@/lib/food-catalog";
 import ShareCard from "./ShareCard";
 
 // 공유 링크: /share?menu=짜장면&from=닉네임 (DB 없이 주소에 담긴 값만으로 그림)
@@ -19,7 +19,7 @@ async function Shared({ searchParams }: Pick<PageProps<"/share">, "searchParams"
   const params = await searchParams;
   const menu = first(params.menu).slice(0, 50);
   const from = first(params.from).slice(0, 30);
-  const food = FOODS.find((f) => f.name === menu);
+  const food = RECOMMENDATION_FOODS.find((f) => f.name === menu);
 
   if (!menu) return <p className="text-neutral-500">공유된 메뉴가 없어요.</p>;
   return <ShareCard menu={menu} from={from} food={food} />;

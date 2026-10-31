@@ -31,7 +31,8 @@ export default function ShareButton({
 
     if (navigator.share) {
       // 사용자가 공유 창을 닫아도 오류가 나므로 무시
-      await navigator.share({ title: "메뉴얼", text: `오늘은 ${menu} 어때요?`, url }).catch(() => {});
+      // 문구(text)를 같이 보내면 일부 메신저가 링크 끝에 붙여 이름(from)에 섞임 → 링크만 보냄
+      await navigator.share({ title: `오늘은 ${menu} 어때요?`, url }).catch(() => {});
       return;
     }
     try {
