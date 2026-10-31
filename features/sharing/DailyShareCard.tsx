@@ -12,7 +12,7 @@ export default function DailyShareCard({ params }: { params: URLSearchParams }) 
     <ul className="my-8 flex flex-col gap-3">{(Object.keys(mealLabels) as (keyof typeof mealLabels)[]).map(meal => {
       const menu = share.meals[meal]?.name;
       const food = RECOMMENDATION_FOODS.find(item => item.name === menu);
-      return <li key={meal} className="flex items-center gap-3 rounded-2xl border border-neutral-200 px-4 py-5 sm:gap-4">
+      return <li key={meal} className="grid grid-cols-[28px_minmax(0,1fr)] items-center gap-x-3 gap-y-2 rounded-2xl border border-neutral-200 px-4 py-5 sm:flex sm:gap-4">
       <span className="flex shrink-0 flex-col items-center gap-1 text-xs text-neutral-500"><MealIcon meal={meal} compact />{mealLabels[meal]}</span>
       <span className={`min-w-0 flex-1 break-words text-lg ${menu ? "font-medium text-neutral-900" : "text-neutral-400"}`}>{menu ?? "미선정"}</span>
       {food && <SharedMealPreview food={food} mealLabel={mealLabels[meal]} />}

@@ -47,7 +47,7 @@ export default function SharedMealPreview({ food, mealLabel }: { food: Food; mea
   const [open, setOpen] = useState(false);
   return <>
     <button type="button" aria-label={`${mealLabel} ${food.name} 메뉴 보기`} aria-haspopup="dialog" onClick={() => setOpen(true)}
-      className="ml-auto shrink-0 cursor-pointer rounded-xl border border-neutral-300 px-3 py-2 text-xs text-neutral-600 hover:bg-neutral-50 focus-visible:outline-2 focus-visible:outline-offset-2 sm:text-sm">메뉴 보기</button>
+      className="col-start-2 ml-auto shrink-0 cursor-pointer whitespace-nowrap rounded-xl border border-neutral-300 px-3 py-2 text-xs text-neutral-600 hover:bg-neutral-50 focus-visible:outline-2 focus-visible:outline-offset-2 sm:text-sm">메뉴 보기</button>
     {open && <PreviewDialog food={food} onClose={() => setOpen(false)} />}
   </>;
 }

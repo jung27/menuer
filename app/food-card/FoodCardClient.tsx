@@ -388,12 +388,12 @@ function Result({ taste, saved, onRestart }: { taste: Taste; saved?: Saved; onRe
             finishOnClick
             text={"마음에 드는 메뉴를 선정하거나\n친구에게 공유해 보세요!"}
           />
-          <ol className="grid grid-cols-2 gap-3">
+          <ol className="grid grid-cols-1 gap-3 min-[400px]:grid-cols-2">
             {ranking.slice(0, 5).map((f, i) => (
               <li
                 key={f.menuId}
                 className={`flex flex-col gap-2 rounded-2xl bg-white p-3 shadow ${
-                  i === 0 ? "col-span-2 border-2 border-orange-400 p-4" : i > 2 ? "col-span-2" : ""
+                  i === 0 ? "col-span-full border-2 border-orange-400 p-4" : i > 2 ? "col-span-full" : ""
                 }`}
               >
                 <div className="relative flex items-center justify-center">
@@ -404,12 +404,12 @@ function Result({ taste, saved, onRestart }: { taste: Taste; saved?: Saved; onRe
                   <FoodImage name={f.name} className={i === 0 ? "aspect-[4/3]" : "aspect-square"} />
                 )}
                 <p className="text-center text-xs text-gray-500">유사도 {Math.round(f.score)}점</p>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <button
                     data-tutorial={i === 0 ? "result" : undefined}
                     disabled={saving || !selectionContext}
                     aria-label={`${f.name} 메뉴로 선정`}
-                    className="flex-1 rounded-xl bg-orange-500 py-2 font-bold text-white disabled:opacity-50"
+                    className="flex min-h-11 flex-1 items-center justify-center whitespace-nowrap rounded-xl bg-orange-500 py-2 font-bold text-white disabled:opacity-50"
                     onClick={() => selectMenu(f.menuId)}
                   >
                     {saving ? "저장 중..." : "선정"}
@@ -417,7 +417,7 @@ function Result({ taste, saved, onRestart }: { taste: Taste; saved?: Saved; onRe
                   <ShareButton
                     data-tutorial={i === 0 ? "result" : undefined}
                     menu={f.name}
-                    className="rounded-xl border border-gray-300 px-3 py-2 text-gray-600"
+                    className="flex min-h-11 flex-1 items-center justify-center whitespace-nowrap rounded-xl border border-gray-300 px-3 py-2 text-gray-600"
                   />
                 </div>
               </li>

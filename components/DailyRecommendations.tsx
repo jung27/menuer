@@ -43,8 +43,8 @@ export default function DailyRecommendations({
           <details open={i === 0} onToggle={event => {
             if (!event.currentTarget.open) shareFeedback.reset(day.date);
           }} className="group relative rounded-2xl border border-neutral-200 bg-white">
-            <summary className="flex cursor-pointer list-none items-center justify-between px-6 py-5 font-semibold text-neutral-900 [&::-webkit-details-marker]:hidden">
-              {day.date}
+            <summary className="mh-day-summary flex cursor-pointer list-none items-center justify-between px-6 py-5 font-semibold text-neutral-900 [&::-webkit-details-marker]:hidden">
+              <span className="mh-day-date">{day.date}</span>
               <span
                 aria-hidden
                 className="text-xl text-neutral-400 transition-transform group-open:-rotate-90"
@@ -53,39 +53,38 @@ export default function DailyRecommendations({
               </span>
             </summary>
             <DailyShareButton day={day} feedback={shareFeedback.forButton(`${day.date}:day`, day.date)} />
-            <ul className="flex flex-col gap-2 px-6 pb-6">
+            <ul className="mh-meals flex flex-col gap-3 px-6 pb-6">
               {MEALS.map(({ key, label }) => {
                 const menu = day.meals[key];
                 return (
-                  <li key={key} className="flex items-center gap-4">
-                    <span className="flex w-10 shrink-0 flex-col items-center text-xs text-neutral-500">
+                  <li key={key} className="mh-meal-row">
+                    <span className="mh-meal-time flex flex-col items-center text-xs text-neutral-500">
                       <MealIcon meal={key} />
                       {label}
                     </span>
                     {day.date !== editableDate ? (
-                      <div className="flex-1 rounded-xl border border-neutral-200 px-4 py-3 text-neutral-700">{menu ?? "미선정"}</div>
+                      <div className="mh-meal-menu rounded-xl border border-neutral-200 text-neutral-700"><span className="mh-meal-name">{menu ?? "미선정"}</span></div>
                     ) : <Link
                       data-tutorial={key === "breakfast" ? "home" : undefined}
                       href={recommendHref(day.date, key)}
                       aria-label={menu ? `${label} ${menu}, 다시 추천받기` : `${label} 메뉴 추천받기`}
-                      className={`flex flex-1 items-center gap-2 rounded-xl border px-4 py-3 transition-colors ${
+                      className={`mh-meal-menu rounded-xl border transition-colors ${
                         menu
                           ? "border-neutral-300 bg-neutral-50 font-medium text-neutral-900"
                           : "border-dashed border-neutral-300 text-neutral-500 hover:bg-neutral-50"
                       }`}
                     >
-                      <span aria-hidden className="text-neutral-400">
+                      <span aria-hidden className="mh-meal-action text-neutral-400">
                         {menu ? "↻" : "+"}
                       </span>
-                      {menu ?? "추천"}
-                      {menu && <span className="ml-auto text-xs text-neutral-500">다시 고르기</span>}
+                      <span className="mh-meal-name">{menu ?? "추천"}</span>
                     </Link>}
                     {menu && (
                       <ShareButton
                         menu={menu}
                         label="음식 공유"
                         feedback={shareFeedback.forButton(`${day.date}:${key}`, day.date)}
-                        className="shrink-0 rounded-xl border border-neutral-300 px-3 py-3 text-sm text-neutral-600 hover:bg-neutral-50"
+                        className="mh-meal-share rounded-xl border border-neutral-300 px-3 py-3 text-sm text-neutral-600 hover:bg-neutral-50"
                       />
                     )}
                   </li>

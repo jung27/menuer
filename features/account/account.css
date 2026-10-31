@@ -5,6 +5,7 @@
 .ac-page button, .ac-user-menu button { font:inherit; cursor:pointer; }
 .ac-page :is(a,button,input,select):focus-visible, .ac-user-menu :is(a,button):focus-visible, .ac-login:focus-visible { outline:2px solid #666; outline-offset:4px; }
 .ac-page button:disabled { opacity:.45; cursor:default; }
+.ac-button, .ac-more, .ac-login, .ac-tabs a, .ac-row-actions :is(a,button), .ac-switch-label, .ac-photo-actions :is(label,button) { white-space:nowrap; }
 .ac-user-menu { position:relative; color:#292929; font-family:var(--site-font); }
 .ac-user-trigger { display:grid; place-items:center; width:42px; height:42px; border:1px solid #ddd; border-radius:50%; background:#fff; color:#3f3f3f; overflow:hidden; padding:0; }
 .ac-avatar { width:100%; height:100%; object-fit:cover; }
@@ -27,7 +28,7 @@
 .ac-food-list { display:grid; gap:13px; margin:0; padding:0; list-style:none; }
 .ac-food-row { display:flex; align-items:center; justify-content:space-between; gap:24px; padding:20px 24px; min-height:118px; border:1px solid var(--ac-line); border-radius:15px; background:#fff; }
 .ac-food-row:hover { background:#fafafa; }
-.ac-food-name { font-size:18px; font-weight:500; overflow-wrap:anywhere; min-width:0; }
+.ac-food-name { font-size:18px; font-weight:500; word-break:keep-all; overflow-wrap:anywhere; min-width:0; }
 .ac-food-thumb { position:relative; display:grid; place-items:center; width:96px; height:76px; flex-shrink:0; border-radius:10px; overflow:hidden; background:#f7f7f7; }
 .ac-food-thumb img { object-fit:cover; }
 .ac-food-symbol { width:48px; height:44px; border:5px solid; border-radius:15px 20px 16px 19px; box-shadow:inset 0 -5px 8px #00000016; }
@@ -139,7 +140,8 @@
   .ac-food-thumb { width:74px; height:66px; }
   .ac-preview-layout { grid-template-columns:minmax(0,1fr); gap:16px; }
   .ac-preview { height:320px; }
-  .ac-actions { grid-template-columns:repeat(3,minmax(0,1fr)); gap:9px; }
+  .ac-actions { grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
+  .ac-actions > button:nth-of-type(3) { grid-column:1 / -1; }
   .ac-actions .ac-button { padding:10px 6px; font-size:13px; }
   .ac-uploaded { grid-column:1 / -1; }
   .ac-palette { grid-template-columns:repeat(8,minmax(0,1fr)); gap:7px; }
