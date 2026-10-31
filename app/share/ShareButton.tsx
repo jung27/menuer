@@ -11,7 +11,11 @@ const getNickname = () =>
     .catch(() => ""));
 
 // 메뉴 하나를 /share 링크로 공유. 폰은 공유 창, 컴퓨터는 링크 복사.
-export default function ShareButton({ menu, className = "" }: { menu: string; className?: string }) {
+export default function ShareButton({
+  menu,
+  className = "",
+  ...rest
+}: { menu: string; className?: string } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
   const [nickname, setNickname] = useState("");
   const [status, setStatus] = useState<"" | "copied" | "failed">("");
 
@@ -39,7 +43,7 @@ export default function ShareButton({ menu, className = "" }: { menu: string; cl
   }
 
   return (
-    <button onClick={share} className={className} aria-label={`${menu} 공유하기`}>
+    <button {...rest} onClick={share} className={className} aria-label={`${menu} 공유하기`}>
       {status === "copied" ? "링크 복사됨" : status === "failed" ? "복사 실패" : "공유"}
     </button>
   );

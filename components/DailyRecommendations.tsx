@@ -1,5 +1,6 @@
 import Link from "next/link";
 import ShareButton from "@/app/share/ShareButton";
+import Tutorial from "@/components/Tutorial";
 
 export type Meal = "breakfast" | "lunch" | "dinner";
 
@@ -28,6 +29,8 @@ export default function DailyRecommendations({
   recommendHref?: (date: string, meal: Meal) => string; // "추천" 버튼을 눌렀을 때 갈 주소
 }) {
   return (
+    <>
+      {editableDate && <Tutorial step="home" text={"환영해요! 👋\n오늘 아침 메뉴부터 추천받아 볼까요?"} />}
     <ul className="flex flex-col gap-3">
       {days.map((day, i) => (
         <li key={day.date}>
@@ -56,6 +59,7 @@ export default function DailyRecommendations({
                     {day.date !== editableDate ? (
                       <div className="flex-1 rounded-xl border border-neutral-200 px-4 py-3 text-neutral-700">{menu ?? "미선정"}</div>
                     ) : <Link
+                      data-tutorial={key === "breakfast" ? "home" : undefined}
                       href={recommendHref(day.date, key)}
                       aria-label={menu ? `${label} ${menu}, 다시 추천받기` : `${label} 메뉴 추천받기`}
                       className={`flex flex-1 items-center gap-2 rounded-xl border px-4 py-3 transition-colors ${
@@ -84,5 +88,6 @@ export default function DailyRecommendations({
         </li>
       ))}
     </ul>
+    </>
   );
 }
