@@ -12,72 +12,39 @@ import {
   type Taste,
 } from "./taste";
 import "./gauge.css";
-import SensoryObject, { SensoryPresetType } from "@/components/SensoryObject";
+import SensoryObject from "@/components/SensoryObject";
 
-const TAP_PX = 10;
-const TAP_MS = 300;
 const SHAKE_ACCEL = 10;
-const WIGGLE_HOLD_MS = 120;
 const SHAKE_HOLD_MS = 300;
-const HOLD_DELAY_MS = 400;
 const TICK_MS = 100;
-const WIGGLE_PX = 15;
-const WIGGLE_MS = 800;
-const WIGGLE_FLIPS = 2;
-
-function getPresetForFood(food?: Food): SensoryPresetType {
-  if (!food || !food.tags) return "crispy";
-
-  const scores: Array<{ type: SensoryPresetType; val: number }> = [
-    { type: "crispy", val: food.tags["바삭함"] ?? 0 },
-    { type: "spicy", val: food.tags["매운맛"] ?? 0 },
-    { type: "hot", val: food.tags["단맛"] ?? 0 },
-    { type: "soup", val: food.tags["국물"] ?? 0 },
-    { type: "hearty", val: food.tags["기름짐"] ?? 0 },
-    { type: "chewy", val: food.tags["짠맛"] ?? 0 },
-  ];
-
-  scores.sort((a, b) => b.val - a.val);
-  return scores[0].type;
-}
 
 export default function Home() {
   const [index, setIndex] = useState(0);
   const [taste, setTaste] = useState(emptyTaste);
+  const [cardDamage, setCardDamage] = useState(0);
   const [pos, setPos] = useState({ x: 0, y: 0 });
-  const [dragging, setDragging] = useState(false);
   const [finished, setFinished] = useState(false);
   const [shakeOn, setShakeOn] = useState(false);
-  const start = useRef<{ x: number; y: number; t: number } | null>(null);
   const leaving = useRef(false);
-  const wiggle = useRef({
-    x: { last: 0, from: 0, dir: 0 },
-    y: { last: 0, from: 0, dir: 0 },
-    flips: [] as number[],
-  });
   const shakingUntil = useRef(0);
 
   const food: Food | undefined = FOODS[index];
   const done = finished || !food;
+
   const bump = (w: number) => {
     if (!food) return;
     setTaste((t) => applyInteraction(t, food, w));
   };
 
+  // 모바일 흔들기(DeviceMotion) 시 현재 음식 스탯 반영 및 카드 데미지 증가
   useEffect(() => {
     if (!food) return;
     const id = setInterval(() => {
       const now = Date.now();
-      const s = start.current;
-      const holding = s && now - s.t > HOLD_DELAY_MS;
-      const rate =
-        now < shakingUntil.current
-          ? WEIGHTS.shakePerSec
-          : holding
-            ? WEIGHTS.holdPerSec
-            : 0;
+      const rate = now < shakingUntil.current ? WEIGHTS.shakePerSec : 0;
       if (!rate) return;
       setTaste((t) => applyInteraction(t, food, (rate * TICK_MS) / 1000));
+      setCardDamage((prev) => Math.min(100, prev + 4));
     }, TICK_MS);
     return () => clearInterval(id);
   }, [food]);
@@ -94,55 +61,6 @@ export default function Home() {
     return () => window.removeEventListener("devicemotion", onMotion);
   }, [shakeOn]);
 
-  // 브라우저 전역에서 카드 넘기기 드래그 유지
-  useEffect(() => {
-    const onPointerMove = (e: PointerEvent) => {
-      const s = start.current;
-      if (!s) return;
-      setPos({ x: e.clientX - s.x, y: e.clientY - s.y });
-
-      const w = wiggle.current;
-      const now = Date.now();
-      for (const [axis, v] of [
-        ["x", e.clientX],
-        ["y", e.clientY],
-      ] as const) {
-        const a = w[axis];
-        const d = Math.sign(v - a.last);
-        if (d && d !== a.dir) {
-          if (Math.abs(a.last - a.from) > WIGGLE_PX) w.flips.push(now);
-          a.dir = d;
-          a.from = a.last;
-        }
-        a.last = v;
-      }
-      w.flips = w.flips.filter((t) => now - t < WIGGLE_MS);
-      if (w.flips.length >= WIGGLE_FLIPS)
-        shakingUntil.current = now + WIGGLE_HOLD_MS;
-    };
-
-    const onPointerUp = (e: PointerEvent) => {
-      const s = start.current;
-      if (!s) return;
-      start.current = null;
-      setDragging(false);
-      const dist = Math.hypot(e.clientX - s.x, e.clientY - s.y);
-      const held = Date.now() - s.t;
-      setPos({ x: 0, y: 0 });
-      if (dist < TAP_PX && held < TAP_MS) bump(WEIGHTS.tap);
-    };
-
-    window.addEventListener("pointermove", onPointerMove);
-    window.addEventListener("pointerup", onPointerUp);
-    window.addEventListener("pointercancel", onPointerUp);
-
-    return () => {
-      window.removeEventListener("pointermove", onPointerMove);
-      window.removeEventListener("pointerup", onPointerUp);
-      window.removeEventListener("pointercancel", onPointerUp);
-    };
-  }, [food]);
-
   async function enableShake() {
     if (typeof DeviceMotionEvent === "undefined") return;
     const DM = DeviceMotionEvent as unknown as {
@@ -153,30 +71,24 @@ export default function Home() {
     setShakeOn(true);
   }
 
+  // 왼쪽(-1)은 이전 카드, 오른쪽(+1)은 다음 카드로 이동하도록 버그 수정
   function skip(dir: number) {
     if (!food || leaving.current) return;
+    if (dir < 0 && index <= 0) return;
     leaving.current = true;
     setPos({ x: dir * 600, y: 0 });
     setTimeout(() => {
       leaving.current = false;
       shakingUntil.current = 0;
       setPos({ x: 0, y: 0 });
-      setIndex((i) => i + 1);
+      setCardDamage(0);
+      setIndex((i) => Math.max(0, i + dir));
     }, 200);
-  }
-
-  function onPointerDown(e: React.PointerEvent) {
-    if (leaving.current) return;
-    start.current = { x: e.clientX, y: e.clientY, t: Date.now() };
-    const w = wiggle.current;
-    w.x = { last: e.clientX, from: e.clientX, dir: 0 };
-    w.y = { last: e.clientY, from: e.clientY, dir: 0 };
-    w.flips = [];
-    setDragging(true);
   }
 
   function restart() {
     setIndex(0);
+    setCardDamage(0);
     setTaste(emptyTaste());
     setFinished(false);
   }
@@ -184,11 +96,9 @@ export default function Home() {
   if (done) return <Result taste={taste} onRestart={restart} />;
 
   const gauge = toGauge(taste);
-  const currentPreset = getPresetForFood(food);
-  const interactionValue = Math.round((index / FOODS.length) * 100);
 
   return (
-    <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 p-4">
+    <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-3 p-4">
       <ul className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
         {TAGS.map((t) => (
           <li
@@ -209,50 +119,47 @@ export default function Home() {
       </ul>
 
       <p className="text-center text-sm text-gray-500">
-        넘긴 카드 {index} / {FOODS.length}
+        카드 {index + 1} / {FOODS.length}
       </p>
 
       <div className="flex flex-1 items-center justify-center gap-2">
-        <SkipButton label="왼쪽으로 넘기기" onClick={() => skip(-1)}>
+        <SkipButton
+          label="이전 카드로 이동"
+          disabled={index === 0}
+          onClick={() => skip(-1)}
+        >
           ‹
         </SkipButton>
+
+        {/* 감각 오브제 자체가 3차원 카드로 동작 (배경 박스 없이 3D 카드 직육면체 렌더링) */}
         <div
-          className="relative z-10 flex aspect-[3/4] min-w-0 max-w-xs flex-1 select-none flex-col items-center justify-center rounded-3xl bg-white p-6 shadow-xl overflow-hidden"
+          className="relative z-10 flex aspect-[3/4] min-w-0 max-w-xs flex-1 select-none items-center justify-center overflow-visible"
           style={{
             transform: `translate(${pos.x}px, ${pos.y}px) rotate(${pos.x / 20}deg)`,
-            transition: dragging
-              ? "none"
-              : "transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
+            transition: "transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)",
           }}
         >
-          {/* 카드 상단 영역 (여기에 마우스를 대고 드래그하면 카드가 움직입니다) */}
-          <div
-            className="absolute top-0 left-0 w-full h-16 z-30 cursor-grab active:cursor-grabbing flex items-center justify-center"
-            onPointerDown={onPointerDown}
-          >
-            <span className="font-bold text-gray-800 bg-white/80 px-4 py-1 rounded-full shadow-sm text-sm">
-              {food.name}
-            </span>
-          </div>
-
-          {/* 중앙 3D 오브젝트 영역 (3D 모델을 직접 문지르고 누르는 인터랙션 전용) */}
-          <div className="w-full h-full pt-10 pointer-events-auto">
+          <div className="w-full h-full">
             <SensoryObject
-              preset={currentPreset}
-              value={interactionValue}
-              onChange={(val) => {
-                bump(val * 0.01);
+              food={food}
+              value={cardDamage}
+              onChange={(newVal) => {
+                const delta = Math.max(1, newVal - cardDamage);
+                setCardDamage(newVal);
+                // 카드를 만지거나 당긴 정도에 비례해 해당 음식의 감각 스탯 흡수
+                bump(delta >= 10 ? WEIGHTS.tap : WEIGHTS.holdPerSec * 0.2);
               }}
             />
           </div>
         </div>
-        <SkipButton label="오른쪽으로 넘기기" onClick={() => skip(1)}>
+
+        <SkipButton label="다음 카드로 이동" onClick={() => skip(1)}>
           ›
         </SkipButton>
       </div>
 
       <button
-        className="rounded-xl bg-orange-500 py-3 text-white"
+        className="rounded-xl bg-orange-500 py-3 font-semibold text-white shadow-md active:scale-[0.99]"
         onClick={() => setFinished(true)}
       >
         추천 받기
@@ -271,13 +178,15 @@ export default function Home() {
 
 function SkipButton(props: {
   label: string;
+  disabled?: boolean;
   onClick: () => void;
   children: React.ReactNode;
 }) {
   return (
     <button
       aria-label={props.label}
-      className="flex size-11 shrink-0 items-center justify-center rounded-full bg-white text-2xl text-gray-500 shadow active:scale-95"
+      disabled={props.disabled}
+      className="flex size-11 shrink-0 items-center justify-center rounded-full bg-white text-2xl text-gray-500 shadow active:scale-95 disabled:opacity-30 disabled:pointer-events-none"
       onClick={props.onClick}
     >
       {props.children}
