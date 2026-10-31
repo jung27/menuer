@@ -1603,10 +1603,15 @@ function SensoryCard3D({
     return () => {
       surfaceAtlas?.colorMap.dispose();
       surfaceAtlas?.bumpMap.dispose();
+    };
+  }, [surfaceAtlas]);
+
+  useEffect(() => {
+    return () => {
       innerFleshAtlas?.colorMap.dispose();
       innerFleshAtlas?.bumpMap.dispose();
     };
-  }, [surfaceAtlas, innerFleshAtlas]);
+  }, [innerFleshAtlas]);
 
   const shardParticles = useMemo(() => {
     return Array.from({ length: 28 }, () => ({
