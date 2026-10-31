@@ -18,10 +18,13 @@ export function cardCategory(food: Food): string {
 
 export function createCardDeck(foods: readonly Food[], random = Math.random): Food[] {
   const buckets = new Map<string, Food[]>();
+  const customFoods: Food[] = [];
   const seen = new Set<string>();
   for (const food of foods) {
     if (seen.has(food.id)) continue;
     seen.add(food.id);
+    // 포함을 켠 내 음식은 무작위 기본 카드 추첨에서 빠지지 않게 모두 넣습니다.
+    if (food.id.startsWith("custom:")) { customFoods.push(food); continue; }
     const category = cardCategory(food);
     const bucket = buckets.get(category) ?? [];
     bucket.push(food);
@@ -32,5 +35,5 @@ export function createCardDeck(foods: readonly Food[], random = Math.random): Fo
   const selectedIds = new Set(selected.map(food => food.id));
   const remaining = [...buckets.values()].flat().filter(food => !selectedIds.has(food.id));
   // 각 분류 하나씩 확보한 뒤, 나머지 전체에서 분류 제한 없이 두 개를 추가합니다.
-  return shuffle([...selected, ...shuffle(remaining, random).slice(0, 2)], random);
+  return shuffle([...selected, ...shuffle(remaining, random).slice(0, 2), ...customFoods], random);
 }

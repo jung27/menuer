@@ -12,14 +12,17 @@ const sessions = [{ cookie: "" }, { cookie: "" }];
 const startWindow = Math.floor(Date.now() / 900000);
 const client = new MongoClient(process.env.MONGODB_URI, { serverSelectionTimeoutMS: 10000 });
 async function call(path, session, method = "GET", body, headers = {}) {
-  const response = await fetch(`http://localhost:3000${path}`, { method, headers: {
+  const response = await fetch(`http://localhost:3000${path}`, { method, signal: AbortSignal.timeout(45000), headers: {
     ...(session.cookie ? { Cookie: session.cookie } : {}), ...(body ? { "Content-Type": "application/json" } : {}), ...headers,
   }, ...(body ? { body: JSON.stringify(body) } : {}) });
   for (const cookie of response.headers.getSetCookie()) if (cookie.startsWith("menuer_session=")) session.cookie = cookie.split(";")[0];
   return { status: response.status, body: await response.json() };
 }
 try {
+  await client.connect();
+  await client.db(process.env.MONGODB_DB).command({ ping: 1 });
   assert.equal((await call("/api/custom-foods", { cookie: "" })).status, 401);
+  assert.equal((await call("/api/food-card/catalog", { cookie: "" })).status, 401);
   for (let i = 0; i < 2; i++) {
     assert.equal((await call("/api/auth/signup", sessions[i], "POST", { email: emails[i], password, nickname: `음식테스트-${suffix.slice(0, 8)}-${i}` })).status, 201);
     assert.equal((await call("/api/auth/login", sessions[i], "POST", { email: emails[i], password })).status, 200);
@@ -53,12 +56,28 @@ try {
   assert.equal((await call(`/api/custom-foods/${id}`, sessions[0], "PATCH", draft)).status, 200);
   const scores = { spicy: 0.83, sweet: 0.11, salty: 0.79, oily: 0.43, soupy: 0.21, crispy: 0.67 };
   const recommend = session => call("/api/recommendations", session, "POST", { requestId: randomUUID(), tasteScores: scores });
+  const cardCatalog = async session => {
+    const result = await call("/api/food-card/catalog", session);
+    assert.equal(result.status, 200);
+    return result.body.foods;
+  };
+  const card = (await cardCatalog(sessions[0])).find(food => food.id === `custom:${id}`);
+  assert.equal(card.name, draft.name);
+  assert.deepEqual(card.customConfig, draft.physics);
+  assert.deepEqual(card.tags, draft.tags);
+  assert.equal(card.image, draft.image);
+  assert.equal("userId" in card, false);
+  assert.ok(!(await cardCatalog(sessions[1])).some(food => food.id === `custom:${id}`));
+  const page = await fetch("http://localhost:3000/food-card", { headers: { Cookie: sessions[0].cookie }, signal: AbortSignal.timeout(45000) }).then(response => response.text());
+  assert.ok(page.includes(`custom:${id}`), "initial server-rendered deck includes the enabled custom food");
+  assert.ok(page.includes(draft.physics.baseColor), "saved appearance is serialized with the card");
   const recommended = await recommend(sessions[0]);
   assert.equal(recommended.status, 200);
   assert.equal(recommended.body.recommendations[0].menuId, `custom:${id}`);
   assert.equal((await call("/food-card/api/recommend", sessions[0], "POST", draft.tags)).body.ranking[0].id, `custom:${id}`);
   assert.ok(!(await recommend(sessions[1])).body.recommendations.some(food => food.menuId === `custom:${id}`));
   assert.equal((await call(`/api/custom-foods/${id}/settings`, sessions[0], "PATCH", { recommendationEnabled: false })).status, 200);
+  assert.ok(!(await cardCatalog(sessions[0])).some(food => food.id === `custom:${id}`));
   assert.ok(!(await recommend(sessions[0])).body.recommendations.some(food => food.menuId === `custom:${id}`));
   assert.ok(!(await call("/food-card/api/recommend", sessions[0], "POST", draft.tags)).body.ranking.some(food => food.id === `custom:${id}`));
   const weightedDraft = { ...emptyCustomFood(), name: "돈가스" };
@@ -100,6 +119,7 @@ try {
   assert.equal(copy.source.id, publicId);
   assert.equal(copy.published, false);
   assert.equal(copy.recommendationEnabled, true);
+  assert.ok((await cardCatalog(sessions[1])).some(food => food.id === `custom:${copy.id}`));
   assert.deepEqual(copy.physics, draft.physics);
   assert.equal((await call("/api/custom-foods", sessions[1])).body.foods.length, 1);
   assert.equal((await recommend(sessions[1])).body.recommendations[0].menuId, `custom:${copy.id}`);
@@ -120,6 +140,7 @@ try {
   assert.equal(republished.body.food.publicId, publicId);
   assert.equal((await call(`/api/public-foods/${publicId}/import`, sessions[1], "POST")).body.food.id, copy.id);
   assert.equal((await call(`/api/custom-foods/${id}/settings`, sessions[0], "PATCH", { recommendationEnabled: true })).body.food.published, true);
+  assert.ok((await cardCatalog(sessions[0])).some(food => food.id === `custom:${id}`));
   // Deleting an imported copy allows a fresh import without affecting its original.
   assert.equal((await call(`/api/custom-foods/${copy.id}`, sessions[1], "DELETE")).status, 200);
   assert.equal((await call(`/api/custom-foods/${copy.id}`, sessions[1])).status, 404);
@@ -147,6 +168,7 @@ try {
   assert.ok(!(await recommend(sessions[0])).body.recommendations.some(food => food.menuId === `custom:${id}`));
   assert.ok(!(await call("/food-card/api/recommend", sessions[0], "POST", draft.tags)).body.ranking.some(food => food.id === `custom:${id}`));
   assert.equal((await call(`/api/custom-foods/${reimport.body.food.id}`, sessions[1])).body.food.name, draft.name);
+  assert.ok(!(await cardCatalog(sessions[0])).some(food => food.id === `custom:${id}`));
   assert.equal((await call("/api/selections/today", sessions[0])).body.meals.breakfast.name, originalName);
   assert.equal((await call("/api/custom-foods?offset=-1", sessions[0])).status, 400);
   assert.equal((await call("/api/auth/logout", sessions[0], "POST")).status, 200);

@@ -1,7 +1,13 @@
+import type { SensoryPhysicsProps } from "@/components/SensoryObject";
+
 export const TAGS = ["매운맛", "단맛", "짠맛", "기름짐", "국물", "바삭함"] as const;
 export type Tag = (typeof TAGS)[number];
 export type Taste = Record<Tag, number>; // 각 맛 0~1
-export type Food = { id: string; name: string; tags: Taste };
+export type Food = {
+  id: string; name: string; tags: Taste;
+  customConfig?: SensoryPhysicsProps;
+  image?: string | null;
+};
 
 // 음식 점수 쪽으로 얼마나 다가갈지. 직접 써 보면서 조절하세요.
 export const WEIGHTS = {

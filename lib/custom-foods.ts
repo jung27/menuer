@@ -140,6 +140,15 @@ export async function customRecommendationFoods(userId: string): Promise<Food[]>
   const rows = await (await collection()).find({ userId, recommendationEnabled: { $ne: false } }, { projection: { _id: 1, name: 1, tags: 1 } }).toArray();
   return rows.map(row => ({ id: `custom:${row._id}`, name: row.name, tags: row.tags }));
 }
+export async function customCardFoods(userId: string): Promise<Food[]> {
+  const rows = await (await collection()).find({ userId, recommendationEnabled: { $ne: false } }, {
+    projection: { _id: 1, name: 1, tags: 1, physics: 1, image: 1 },
+  }).sort({ createdAt: -1, _id: -1 }).toArray();
+  return rows.map(row => {
+    const draft = parseCustomFood(row);
+    return { id: `custom:${row._id}`, name: draft.name, tags: draft.tags, customConfig: draft.physics, image: draft.image };
+  });
+}
 export async function updateCustomFood(userId: string, id: string, body: unknown) {
   checkId(id);
   const food = input(body);

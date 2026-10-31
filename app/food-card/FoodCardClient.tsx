@@ -3,7 +3,6 @@ import { readApiResponse } from "@/lib/read-api-response";
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { RECOMMENDATION_FOODS } from "@/lib/food-catalog";
 import { createCardDeck } from "./deck";
 import {
   TAGS,
@@ -53,6 +52,9 @@ function Home({ initialFoods }: { initialFoods: Food[] }) {
   const [pos, setPos] = useState({ x: 0, y: 0 });
   const [finished, setFinished] = useState(false);
   const [saved, setSaved] = useState<Saved | null | undefined>(undefined); // undefined = 확인 중
+  const [restartPending, setRestartPending] = useState(false);
+  const [restartError, setRestartError] = useState("");
+  const restartLock = useRef(false);
   const leaving = useRef(false);
 
   useEffect(() => {
@@ -81,18 +83,29 @@ function Home({ initialFoods }: { initialFoods: Food[] }) {
     }, 200);
   }
 
-  function restart() {
-    setFoods(createCardDeck(RECOMMENDATION_FOODS));
-    setIndex(0);
-    setCardDamage(0);
-    setTaste(emptyTaste());
-    setFinished(false);
+  async function restart() {
+    if (restartLock.current) return;
+    restartLock.current = true;
+    setRestartPending(true); setRestartError("");
+    try {
+      // 저장/수정/포함 설정을 바꾼 뒤에도 가장 최근의 내 음식 목록으로 다시 시작합니다.
+      const response = await fetch("/api/food-card/catalog", { cache: "no-store" });
+      const data = await readApiResponse(response);
+      if (!response.ok) throw new Error(data.error?.message ?? "음식 카드를 불러오지 못했어요.");
+      setFoods(createCardDeck(data.foods as Food[]));
+      setIndex(0);
+      setCardDamage(0);
+      setTaste(emptyTaste());
+      setFinished(false);
+      setSaved(null);
+    } catch (error) {
+      setRestartError(error instanceof Error ? error.message : "음식 카드를 불러오지 못했어요.");
+    } finally { restartLock.current = false; setRestartPending(false); }
   }
 
   if (saved === undefined) return <p className="p-8 text-center text-gray-500">불러오는 중...</p>;
-  if (saved)
-    return <Result taste={taste} saved={saved} onRestart={() => { setSaved(null); restart(); }} />;
-  if (done) return <Result taste={taste} onRestart={restart} />;
+  if (saved || done) return <Result taste={taste} saved={saved ?? undefined} foods={foods}
+    onRestart={() => void restart()} restartPending={restartPending} restartError={restartError} />;
 
   const gauge = toGauge(taste);
 
@@ -143,6 +156,8 @@ function Home({ initialFoods }: { initialFoods: Food[] }) {
 
         {/* 감각 오브제 자체가 3차원 카드로 동작 */}
         <div
+          role="group"
+          aria-label={`${food.name} 음식 카드`}
           data-tutorial="card"
           className="relative z-10 flex aspect-[4/5] max-h-[600px] w-full min-w-0 select-none items-center justify-center overflow-visible"
           style={{
@@ -154,6 +169,7 @@ function Home({ initialFoods }: { initialFoods: Food[] }) {
             <SensoryObject
               preserveOriginalCardSize
               food={food}
+              customConfig={food.customConfig}
               showInfo={showInfo}
               value={cardDamage}
               onChange={(newVal) => {
@@ -217,7 +233,10 @@ const API_KEYS = {
   바삭함: "crispy",
 } as const;
 
-function Result({ taste, saved, onRestart }: { taste: Taste; saved?: Saved; onRestart: () => void }) {
+function Result({ taste, saved, foods, onRestart, restartPending, restartError }: {
+  taste: Taste; saved?: Saved; foods: Food[]; onRestart: () => void;
+  restartPending: boolean; restartError: string;
+}) {
   const router = useRouter();
   const [selectionContext, setSelectionContext] = useState<{
     recordId: string;
@@ -344,7 +363,7 @@ function Result({ taste, saved, onRestart }: { taste: Taste; saved?: Saved; onRe
           {selectionContext.date}
           <select
             aria-label="선정할 끼니"
-            disabled={saving}
+            disabled={saving || restartPending}
             value={selectionContext.meal}
             onChange={(event) =>
               setSelectionContext({
@@ -401,13 +420,15 @@ function Result({ taste, saved, onRestart }: { taste: Taste; saved?: Saved; onRe
                   <span className={`font-bold ${i === 0 ? "text-3xl" : "text-lg"}`}>{f.name}</span>
                 </div>
                 {i < 3 && (
-                  <FoodImage name={f.name} className={i === 0 ? "aspect-[4/3]" : "aspect-square"} />
+                  <FoodImage name={f.name} custom={f.menuId.startsWith("custom:")}
+                    image={foods.find(food => food.id === f.menuId)?.image}
+                    className={i === 0 ? "aspect-[4/3]" : "aspect-square"} />
                 )}
                 <p className="text-center text-xs text-gray-500">유사도 {Math.round(f.score)}점</p>
                 <div className="flex flex-wrap gap-2">
                   <button
                     data-tutorial={i === 0 ? "result" : undefined}
-                    disabled={saving || !selectionContext}
+                    disabled={saving || restartPending || !selectionContext}
                     aria-label={`${f.name} 메뉴로 선정`}
                     className="flex min-h-11 flex-1 items-center justify-center whitespace-nowrap rounded-xl bg-orange-500 py-2 font-bold text-white disabled:opacity-50"
                     onClick={() => selectMenu(f.menuId)}
@@ -425,12 +446,13 @@ function Result({ taste, saved, onRestart }: { taste: Taste; saved?: Saved; onRe
           </ol>
         </>
       )}
+      {restartError && <p role="alert" className="text-center text-red-500">{restartError}</p>}
       <button
-        disabled={saving}
+        disabled={saving || restartPending}
         className="rounded-xl bg-gray-200 py-3 disabled:opacity-50"
         onClick={onRestart}
       >
-        다시 하기
+        {restartPending ? "불러오는 중…" : "다시 하기"}
       </button>
     </main>
   );
@@ -451,17 +473,19 @@ function Medal({ rank }: { rank: number }) {
   );
 }
 
-// 사진은 /api/food-image가 위키백과에서 찾아 DB에 저장해 둔 것. 없으면 접시 그림.
-function FoodImage({ name, className }: { name: string; className: string }) {
+// 내 음식은 저장한 그림을 사용하고, 기본 메뉴는 음식 사진 API를 사용합니다.
+function FoodImage({ name, className, image, custom }: {
+  name: string; className: string; image?: string | null; custom: boolean;
+}) {
   const [failed, setFailed] = useState(false);
-  return failed ? (
+  return failed || (custom && !image) ? (
     <div className={`flex items-center justify-center rounded-xl bg-orange-50 text-5xl ${className}`} aria-hidden>
       🍽️
     </div>
   ) : (
     // eslint-disable-next-line @next/next/no-img-element -- 외부 사진 주소가 음식마다 달라서 일반 img 사용
     <img
-      src={`/api/food-image?name=${encodeURIComponent(name)}`}
+      src={custom ? image! : `/api/food-image?name=${encodeURIComponent(name)}`}
       alt={name}
       decoding="async"
       onError={() => setFailed(true)}

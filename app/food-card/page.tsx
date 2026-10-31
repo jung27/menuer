@@ -3,9 +3,10 @@ import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { AuthError, requireUser } from "@/lib/auth";
 import FoodCardClient from "./FoodCardClient";
-import { RECOMMENDATION_FOODS } from "@/lib/food-catalog";
+import { foodCardCatalog } from "@/lib/food-card-catalog";
 import { createCardDeck } from "./deck";
 import { reportFailure } from "@/lib/server-failure";
+import type { Food } from "./taste";
 
 export default function FoodCardPage(props: PageProps<"/food-card">) {
   return <Suspense fallback={<p className="p-8 text-center">로그인 확인 중...</p>}>
@@ -22,8 +23,10 @@ async function AuthenticatedFoodCard({ searchParams }: PageProps<"/food-card">) 
     if (typeof params[key] === "string") query.set(key, params[key]);
   }
   const destination = `/food-card${query.size ? `?${query}` : ""}`;
+  let foods: Food[];
   try {
-    await requireUser();
+    const user = await requireUser();
+    foods = await foodCardCatalog(user.id);
   } catch (error) {
     if (error instanceof AuthError && error.status === 401) {
       redirect(`/login?next=${encodeURIComponent(destination)}`);
@@ -31,5 +34,5 @@ async function AuthenticatedFoodCard({ searchParams }: PageProps<"/food-card">) 
     const failure = reportFailure(error, "food-card");
     return <p role="alert" className="p-8 text-center">{failure.error.message}</p>;
   }
-  return <FoodCardClient initialFoods={createCardDeck(RECOMMENDATION_FOODS)} />;
+  return <FoodCardClient initialFoods={createCardDeck(foods)} />;
 }
