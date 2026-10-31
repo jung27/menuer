@@ -5,9 +5,9 @@ export type Food = { id: string; name: string; tags: Taste };
 
 // 음식 점수 쪽으로 얼마나 다가갈지. 직접 써 보면서 조절하세요.
 export const WEIGHTS = {
-  tap: 0.2, // 한 번 누를 때 (0~1)
-  holdPerSec: 0.15, // 잡고 있는 동안 초당
-  shakePerSec: 0.6, // 흔드는 동안 초당
+  tap: 0.1, // 한 번 누를 때 (0~1)
+  holdPerSec: 0.075, // 잡고 있는 동안 초당
+  shakePerSec: 0.3, // 흔드는 동안 초당
 };
 
 export const emptyTaste = (): Taste =>
