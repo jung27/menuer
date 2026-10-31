@@ -7,6 +7,24 @@
 
 ## POST /api/recommendations
 
+### 음식 카드 화면 (현재 프론트)
+
+`/food-card`는 이 API에 `tasteScores`를 전송합니다. 각 음식 카드의 상호작용으로
+계산한 0~1 취향 점수이며 밀리초가 아닙니다. 한글 감각 이름은 아래 영문 키로 변환합니다.
+
+```json
+{"requestId":"추천별 UUID","tasteScores":{"spicy":0.2,"sweet":0.1,"salty":0.3,"oily":0.5,"soupy":0,"crispy":0.5}}
+```
+
+서버는 기존 음식 카드의 20개 메뉴와 코사인 유사도를 사용해 상위 5개를 저장·반환합니다.
+`score`는 0~100 유사도 점수입니다. 응답의 `inputKind`는 `tasteScores`,
+`mode`는 `cosine`이며 `interactionMs`와 `totalInteractionMs`는 null입니다.
+원래 점수는 `tasteScores`, 합계로 정규화한 값은 `ratios`에 저장합니다.
+두 입력 방식은 한 요청에서 함께 보낼 수 없습니다. 전체 점수가 0이면 400입니다.
+아래 시간 입력 방식은 기존 API 호환을 위해 유지합니다.
+
+### 감각 시간 입력 (이전 방식)
+
 ```json
 {
   "requestId": "추천 시도마다 생성한 UUID",

@@ -9,8 +9,10 @@ export type RecommendationRecord = {
   requestId: string;
   createdAt: Date;
   recordDate: string;
-  interactionMs: SensationValues;
-  totalInteractionMs: number;
+  inputKind?: "interactionMs" | "tasteScores";
+  tasteScores?: SensationValues | null;
+  interactionMs: SensationValues | null;
+  totalInteractionMs: number | null;
   ratios: SensationValues;
   recommendations: ReturnType<typeof recommendMenus>;
   algorithmVersion: string;
@@ -34,7 +36,8 @@ export async function saveRecommendation(input: Omit<RecommendationRecord,
   const createdAt = new Date();
   const record: RecommendationRecord = {
     ...input, _id: id, createdAt, recordDate: koreaDate(createdAt),
-    algorithmVersion: "weighted-v1", catalogVersion: "sample-v1",
+    algorithmVersion: input.inputKind === "tasteScores" ? "food-card-cosine-v1" : "weighted-v1",
+    catalogVersion: input.inputKind === "tasteScores" ? "food-card-v1" : "sample-v1",
   };
   try {
     await records.updateOne({ _id: id }, { $setOnInsert: record }, { upsert: true });
@@ -50,7 +53,8 @@ export function publicRecord(record: RecommendationRecord) {
   return {
     recordId: record._id, requestId: record.requestId,
     createdAt: record.createdAt.toISOString(), recordDate: record.recordDate,
-    mode: "weighted", saved: true,
+    mode: record.inputKind === "tasteScores" ? "cosine" : "weighted", saved: true,
+    inputKind: record.inputKind ?? "interactionMs", tasteScores: record.tasteScores ?? null,
     algorithmVersion: record.algorithmVersion, catalogVersion: record.catalogVersion,
     interactionMs: record.interactionMs, totalInteractionMs: record.totalInteractionMs,
     ratios: record.ratios, recommendations: record.recommendations,

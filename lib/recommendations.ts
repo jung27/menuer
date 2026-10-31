@@ -1,3 +1,6 @@
+import { FOODS } from "@/app/food-card/foods";
+import { rank, type Taste } from "@/app/food-card/taste";
+
 export const sensationLabels = {
   spicy: "매운맛",
   sweet: "단맛",
@@ -48,4 +51,15 @@ export function recommendMenus(ratios: SensationValues) {
     };
   }).sort((a, b) => b.score - a.score || a.menuId.localeCompare(b.menuId))
     .slice(0, 3).map((menu, index) => ({ ...menu, rank: index + 1, score: Math.round(menu.score * 100) / 100 }));
+}
+
+// 음식 카드 화면의 기존 코사인 유사도와 20개 메뉴 목록을 유지합니다.
+export function recommendFoodCards(scores: SensationValues) {
+  const taste = Object.fromEntries(sensationKeys.map((key) => [sensationLabels[key], scores[key]])) as Taste;
+  return rank(taste, FOODS).map((food, index) => ({
+    menuId: food.id, name: food.name, rank: index + 1,
+    score: Math.round(food.score * 10000) / 100,
+    matchedSensations: sensationKeys.filter((key) => scores[key] > 0 && food.tags[sensationLabels[key]] > 0),
+    reason: "음식 카드로 표현한 취향과 메뉴의 감각 구성을 비교했어요.",
+  }));
 }
