@@ -814,13 +814,14 @@ function StudioEnvironment() {
   useEffect(() => {
     const pmremGenerator = new THREE.PMREMGenerator(gl);
     pmremGenerator.compileEquirectangularShader();
-    const envTexture = pmremGenerator.fromScene(
-      new RoomEnvironment(),
-      0.04,
-    ).texture;
+    const room = new RoomEnvironment();
+    const environmentTarget = pmremGenerator.fromScene(room, 0.04);
+    const envTexture = environmentTarget.texture;
+    room.dispose();
     scene.environment = envTexture;
     return () => {
-      envTexture.dispose();
+      if (scene.environment === envTexture) scene.environment = null;
+      environmentTarget.dispose();
       pmremGenerator.dispose();
     };
   }, [gl, scene]);
@@ -1502,6 +1503,8 @@ function createSculpted3DCardGeometry(
   geo.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
   geo.setIndex(indices);
   geo.computeVertexNormals();
+  if (nonIndexed !== rawBox) nonIndexed.dispose();
+  rawBox.dispose();
 
   return {
     geometry: geo,
@@ -1834,6 +1837,11 @@ function buildRigidCardCrust(
   const uvs: number[] = [];
   const shardIds: number[] = [];
   const shellThickness = 0.048;
+  // These bisector planes depend only on the seeds, not on each triangle.
+  const clipPlanes = shardCenters.map((seed) => shardCenters.map((other) => {
+    const normal = new THREE.Vector3().subVectors(other, seed);
+    return { normal, constant: (other.lengthSq() - seed.lengthSq()) / 2 };
+  }));
 
   const pushVertexWithUV = (v: THREE.Vector3, isFrontSurface: boolean) => {
     positions.push(v.x, v.y, v.z);
@@ -1860,45 +1868,50 @@ function buildRigidCardCrust(
   };
 
   const triCount = indexAttr.count / 3;
+  const nearestIds = new Int16Array(5);
+  const nearestDistances = new Float64Array(5);
+  const v0 = new THREE.Vector3();
+  const v1 = new THREE.Vector3();
+  const v2 = new THREE.Vector3();
+  const triCenter = new THREE.Vector3();
   for (let t = 0; t < triCount; t++) {
     const i0 = indexAttr.getX(t * 3);
     const i1 = indexAttr.getX(t * 3 + 1);
     const i2 = indexAttr.getX(t * 3 + 2);
 
-    const v0 = new THREE.Vector3().fromBufferAttribute(posAttr, i0);
-    const v1 = new THREE.Vector3().fromBufferAttribute(posAttr, i1);
-    const v2 = new THREE.Vector3().fromBufferAttribute(posAttr, i2);
-    const triCenter = new THREE.Vector3()
-      .add(v0)
+    v0.fromBufferAttribute(posAttr, i0);
+    v1.fromBufferAttribute(posAttr, i1);
+    v2.fromBufferAttribute(posAttr, i2);
+    triCenter.copy(v0)
       .add(v1)
       .add(v2)
       .divideScalar(3);
 
     const isFrontTri = triCenter.z > CARD_DEPTH * 0.3;
 
-    const nearest = shardCenters
-      .map((center, idx) => ({
-        idx,
-        dist: triCenter.distanceToSquared(center),
-      }))
-      .sort((a, b) => a.dist - b.dist)
-      .slice(0, 5);
+    // Keep only the five closest seeds instead of allocating/sorting all 46.
+    nearestDistances.fill(Infinity);
+    for (let id = 0; id < shardCount; id++) {
+      const distance = triCenter.distanceToSquared(shardCenters[id]);
+      let slot = 4;
+      if (distance >= nearestDistances[slot]) continue;
+      while (slot > 0 && distance < nearestDistances[slot - 1]) {
+        nearestDistances[slot] = nearestDistances[slot - 1];
+        nearestIds[slot] = nearestIds[slot - 1];
+        slot--;
+      }
+      nearestDistances[slot] = distance;
+      nearestIds[slot] = id;
+    }
 
-    for (let k = 0; k < nearest.length; k++) {
-      const myIdx = nearest[k].idx;
-      const mySeed = shardCenters[myIdx];
+    for (let k = 0; k < nearestIds.length; k++) {
+      const myIdx = nearestIds[k];
       let poly: THREE.Vector3[] = [v0.clone(), v1.clone(), v2.clone()];
 
-      for (let m = 0; m < nearest.length; m++) {
+      for (let m = 0; m < nearestIds.length; m++) {
         if (k === m) continue;
-        const otherSeed = shardCenters[nearest[m].idx];
-        const planeNormal = new THREE.Vector3().subVectors(otherSeed, mySeed);
-        const midPoint = new THREE.Vector3()
-          .addVectors(mySeed, otherSeed)
-          .multiplyScalar(0.5);
-        const planeConst = midPoint.dot(planeNormal);
-
-        poly = clipPolygonByPlane(poly, planeNormal, planeConst);
+        const plane = clipPlanes[myIdx][nearestIds[m]];
+        poly = clipPolygonByPlane(poly, plane.normal, plane.constant);
         if (poly.length < 3) break;
       }
 
@@ -1939,6 +1952,7 @@ function buildRigidCardCrust(
   geo.setAttribute("position", new THREE.BufferAttribute(posFloat, 3));
   geo.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
   geo.computeVertexNormals();
+  baseGeo.dispose();
   const normFloat = new Float32Array(geo.attributes.normal.array);
 
   const accumCenters = Array.from(
@@ -2145,6 +2159,9 @@ function SensoryCard3D({
   }, [hasCrust, innerPattern, config.crackColor]);
 
   const wispySteamTex = useMemo(() => createWispySteamTexture(), []);
+  useEffect(() => () => wispySteamTex?.dispose(), [wispySteamTex]);
+  useEffect(() => () => innerGeo.dispose(), [innerGeo]);
+  useEffect(() => () => crustData?.geometry.dispose(), [crustData]);
 
   useEffect(() => {
     return () => {
@@ -2591,7 +2608,7 @@ function SensoryCard3D({
         config.inflate * activeLevel * 0.14 +
         rippleEnergy.current * config.squish * 0.04;
       groupRef.current.scale.lerp(
-        new THREE.Vector3(scaleVal, scaleVal, scaleVal),
+        tempOut.set(scaleVal, scaleVal, scaleVal),
         dt * 8,
       );
 
@@ -3027,25 +3044,23 @@ export default function SensoryObject({
     }),
     [],
   );
-  const [randomSeed, setRandomSeed] = useState(1);
-  const [audioEnabled, setAudioEnabled] = useState(true);
-  const [audioReady, setAudioReady] = useState(false);
-  useEffect(() => {
-    let active = true;
-    void prepareSensoryAudio().then(() => {
-      if (active) setAudioReady(true);
-    }).catch(() => {
-      if (active) {
-        setAudioEnabled(false);
-        setAudioReady(true);
-      }
-    });
-    return () => { active = false; };
-  }, []);
-
-  useEffect(() => {
-    setRandomSeed(Math.random() * 100 + 1);
+  // Stable per food: avoid building the expensive crust once with a placeholder
+  // seed and then rebuilding it immediately after the mount effect.
+  const randomSeed = useMemo(() => {
+    let hash = 2166136261;
+    for (const c of String(food?.id ?? preset)) hash = Math.imul(hash ^ c.charCodeAt(0), 16777619);
+    return ((hash >>> 0) % 100000) / 1000 + 1;
   }, [food?.id, preset]);
+  const [audioEnabled, setAudioEnabled] = useState(true);
+  const [readyPattern, setReadyPattern] = useState<string | null>(null);
+  const [mobileRendering, setMobileRendering] = useState(false);
+  useEffect(() => {
+    const query = window.matchMedia("(pointer: coarse)");
+    const update = () => setMobileRendering(query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
 
   const mergedConfig: Required<SensoryPhysicsProps> = useMemo(() => {
     const base = food
@@ -3053,6 +3068,21 @@ export default function SensoryObject({
       : SENSORY_PRESETS[preset].config;
     return { ...base, ...customConfig };
   }, [food, preset, customConfig]);
+  const soundPattern = foodSoundPattern(food?.name, mergedConfig.pattern, customConfig?.pattern);
+  const audioReady = readyPattern === soundPattern;
+  useEffect(() => {
+    let active = true;
+    let background: ReturnType<typeof setTimeout> | undefined;
+    void prepareSensoryAudio(soundPattern).then(() => {
+      if (!active) return;
+      setReadyPattern(soundPattern);
+      // Decode other cards only after the current card is ready to respond.
+      background = setTimeout(() => { void prepareSensoryAudio().catch(() => {}); }, 300);
+    }).catch(() => {
+      if (active) setAudioEnabled(false);
+    });
+    return () => { active = false; clearTimeout(background); };
+  }, [soundPattern]);
 
   const handleInteract = useCallback(
     (delta: number) => {
@@ -3065,7 +3095,7 @@ export default function SensoryObject({
     <div className="relative w-full h-full select-none touch-none">
       <Canvas
         shadows
-        dpr={[1, 2]}
+        dpr={mobileRendering ? [1, 1.5] : [1, 2]}
         camera={{ position: [0, 0, 3.65], fov: 42 }}
         gl={{ antialias: true, alpha: true }}
       >
@@ -3080,7 +3110,7 @@ export default function SensoryObject({
         />
 
         <SensoryCard3D
-          soundPattern={foodSoundPattern(food?.name, mergedConfig.pattern, customConfig?.pattern)}
+          soundPattern={soundPattern}
           audioEnabled={audioEnabled}
           config={mergedConfig}
           food={food}

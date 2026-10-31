@@ -1,4 +1,7 @@
 import { getDatabase } from "@/lib/mongodb";
+import { createFoodImageCache } from "@/lib/food-image-cache";
+
+const cachedImage = createFoodImageCache();
 
 // <img src="/api/food-image?name=짜장면"> → 위키백과 대표 사진으로 이동.
 // 한 번 찾은 결과(사진 주소, 없으면 null)는 DB food_images에 저장해 다음부터 위키백과에 다시 묻지 않음.
@@ -26,6 +29,12 @@ export async function GET(request: Request) {
     return redirect(`https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(PICKED[name])}?width=600`);
   }
 
+  const url = await cachedImage(name, () => lookupImage(name));
+  if (!url) return new Response(null, { status: 404 });
+  return redirect(url);
+}
+
+async function lookupImage(name: string) {
   const images = await getDatabase()
     .then((db) => db.collection<Cached>("food_images"))
     .catch(() => null); // DB가 안 되면 저장 없이 매번 찾음
@@ -35,8 +44,7 @@ export async function GET(request: Request) {
     url = await findWikiImage(name);
     if (url !== undefined) await images?.updateOne({ _id: name }, { $set: { url } }, { upsert: true }).catch(() => {});
   }
-  if (!url) return new Response(null, { status: 404 });
-  return redirect(url);
+  return url;
 }
 
 const redirect = (url: string) =>
@@ -50,7 +58,7 @@ async function findWikiImage(name: string): Promise<string | null | undefined> {
     prop: "pageimages", piprop: "thumbnail", pithumbsize: "600",
   }).toString();
   try {
-    const res = await fetch(api, { headers: { "User-Agent": "menuer/1.0" } });
+    const res = await fetch(api, { headers: { "User-Agent": "menuer/1.0" }, signal: AbortSignal.timeout(5000) });
     if (!res.ok) return undefined;
     const data = await res.json();
     const page = Object.values(data.query?.pages ?? {})[0] as { thumbnail?: { source: string } } | undefined;

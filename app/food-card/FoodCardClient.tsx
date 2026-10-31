@@ -436,6 +436,7 @@ function FoodImage({ name, className }: { name: string; className: string }) {
     <img
       src={`/api/food-image?name=${encodeURIComponent(name)}`}
       alt={name}
+      decoding="async"
       onError={() => setFailed(true)}
       className={`w-full rounded-xl object-cover ${className}`}
     />
