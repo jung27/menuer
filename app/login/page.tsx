@@ -1,18 +1,17 @@
 "use client";
 
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
+import AuthLink from "@/components/AuthLink";
 import { buttonClass, inputClass, postAuth } from "./auth";
 import { loginDestination } from "@/lib/login-destination";
 
 export default function LoginPage() {
-  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (pending) return;
     const form = new FormData(e.currentTarget);
     setPending(true);
     setError(null);
@@ -20,10 +19,9 @@ export default function LoginPage() {
       email: form.get("email"),
       password: form.get("password"),
     });
-    setPending(false);
-    if (err) return setError(err);
-    router.replace(loginDestination(window.location.search));
-    router.refresh(); // 로그인 상태가 반영되도록
+    if (err) { setPending(false); setError(err); return; }
+    // 쿠키가 바뀐 뒤에는 이전 로그인 상태의 화면 캐시를 사용하지 않습니다.
+    window.location.replace(loginDestination(window.location.search));
   }
 
   return (
@@ -32,7 +30,7 @@ export default function LoginPage() {
         onSubmit={onSubmit}
         className="flex w-full max-w-sm flex-col gap-4 rounded-2xl border border-neutral-200 bg-white p-8"
       >
-        <h1 className="text-2xl font-bold text-neutral-900">로그인</h1>
+        <h1 className="site-page-title">로그인</h1>
 
         <label className="flex flex-col gap-1 text-sm text-neutral-600">
           이메일
@@ -60,9 +58,9 @@ export default function LoginPage() {
         </button>
         <p className="text-center text-sm text-neutral-500">
           계정이 없나요?{" "}
-          <Link href="/login/signup" className="font-medium text-neutral-900 underline">
+          <AuthLink href="/login/signup" className="font-medium text-neutral-900 underline">
             회원가입
-          </Link>
+          </AuthLink>
         </p>
       </form>
     </main>

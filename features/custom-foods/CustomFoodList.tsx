@@ -9,6 +9,7 @@ import type { CustomFood } from "./model";
 import FoodTabs from "./FoodTabs";
 import FoodThumb from "./FoodThumb";
 import DeleteFoodDialog from "./DeleteFoodDialog";
+import PageHeading from "@/components/PageHeading";
 
 function FoodList({ userId }: { userId: string }) {
   const router = useRouter();
@@ -76,7 +77,7 @@ function FoodList({ userId }: { userId: string }) {
       else setDeleteError(cause instanceof Error ? cause.message : "삭제하지 못했어요. 다시 시도해주세요.");
     } finally { locks.current.delete(food.id); setBusy([...locks.current]); }
   }
-  return <main className="ac-main"><h1 className="ac-title">사용자 지정 음식</h1><FoodTabs active="mine" />
+  return <main className="ac-main"><PageHeading title="사용자 지정 음식" /><FoodTabs active="mine" />
     <Link href="/custom-foods/new" className="ac-add"><span>＋ 음식 추가</span><span aria-hidden="true">→</span></Link>
     {error && <div className="ac-error" role="alert">{error} <button type="button" onClick={refresh}>다시 시도</button></div>}
     {pending && foods.length === 0 ? <p className="ac-status" role="status">불러오는 중…</p> : !error && foods.length === 0 ? <div className="ac-empty">아직 만든 음식이 없어요.</div> : null}

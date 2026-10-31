@@ -6,10 +6,13 @@ export function useCurrentUser() {
   const [user, setUser] = useState<CurrentUser | null | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
-  const retry = useCallback(() => setAttempt(value => value + 1), []);
+  const retry = useCallback(() => { setError(null); setAttempt(value => value + 1); }, []);
+  useEffect(() => {
+    window.addEventListener("menuer-auth-change", retry);
+    return () => window.removeEventListener("menuer-auth-change", retry);
+  }, [retry]);
   useEffect(() => {
     const controller = new AbortController();
-    setError(null);
     fetch("/api/auth/me", { cache: "no-store", signal: controller.signal })
       .then(async response => {
         if (response.status === 401) { setUser(null); return; }

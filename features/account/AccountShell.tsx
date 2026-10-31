@@ -1,14 +1,12 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, type ReactNode } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import UserMenu from "@/components/UserMenu";
 import { useCurrentUser, type CurrentUser } from "./useCurrentUser";
 import "./account.css";
 
 export function AccountShell({ children }: { children: ReactNode }) {
-  return <div className="ac-page" lang="ko"><header className="ac-header"><div className="ac-header-inner"><Link href="/" className="ac-brand" aria-label="메뉴얼 홈"><span aria-hidden="true">m.</span>메뉴얼</Link><UserMenu /></div></header>{children}</div>;
+  return <div className="ac-page" lang="ko">{children}</div>;
 }
 export function RequireAccount({ children }: { children: (user: CurrentUser) => ReactNode }) {
   const { user, error, retry } = useCurrentUser();

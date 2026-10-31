@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { loginDestination } from "../lib/login-destination.ts";
+import { authPageHref, loginDestination } from "../lib/login-destination.ts";
 const destination = next => loginDestination(`?next=${encodeURIComponent(next)}`);
 
 test("login returns to recommendations with date and meal", () => {
@@ -17,4 +17,25 @@ test("login returns to the account food list, editor and profile", () => {
 test("unapproved destinations and external redirects fall back to home", () => {
   for (const next of ["https://other.invalid/food-card", "//other.invalid/custom-foods", "/api/auth/logout", "/login", "https://menuer.local.other.invalid/mypage"]) assert.equal(destination(next), "/");
   assert.equal(loginDestination(""), "/");
+});
+
+test("signup and login preserve the destination across repeated round trips", () => {
+  for (const target of ["/mypage", "/food-card?date=2026-11-01&meal=breakfast", "/custom-foods/explore?q=김치 볶음밥"]) {
+    const search = `?next=${encodeURIComponent(target)}`;
+    const signup = new URL(authPageHref("/login/signup", search), "https://menuer.local");
+    const login = new URL(authPageHref("/login", signup.search), "https://menuer.local");
+    assert.equal(signup.pathname, "/login/signup");
+    assert.equal(login.pathname, "/login");
+    assert.equal(loginDestination(login.search), loginDestination(search));
+    assert.equal(authPageHref("/login/signup", login.search), signup.pathname + signup.search);
+  }
+});
+
+test("auth links discard unsafe destinations and unrelated query parameters", () => {
+  for (const page of ["/login", "/login/signup"]) {
+    for (const target of ["https://other.invalid/mypage", "//other.invalid/mypage", "/api/auth/logout", "/login/signup"]) {
+      assert.equal(authPageHref(page, `?next=${encodeURIComponent(target)}&password=discard`), page);
+    }
+    assert.equal(authPageHref(page, ""), page);
+  }
 });

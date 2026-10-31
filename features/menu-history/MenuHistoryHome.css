@@ -6,23 +6,20 @@
   --muted: #888;
   --line: #e8e8e8;
   --control: #f7f7f7;
-  min-height: 100vh;
-  flex: 1;
+  min-height: 0;
+  width: 100%;
+  flex: 1 0 auto;
   background: var(--background);
   color: var(--ink);
-  font-family: Arial, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  font-family: var(--site-font);
   -webkit-font-smoothing: antialiased;
 }
 .mh-page * { box-sizing: border-box; }
 .mh-page a { text-decoration: none; }
 .mh-page a:focus-visible { outline: 3px solid #777; outline-offset: 6px; }
 .mh-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
-.mh-header { border-bottom: 1px solid var(--line); }
-.mh-header-inner { max-width: 1120px; min-height: 80px; margin: auto; padding: 0 40px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
-.mh-brand { display: inline-flex; align-items: center; gap: 10px; color: var(--ink); font-size: 21px; font-weight: 700; letter-spacing: -.8px; }
-.mh-brand-mark { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 10px 10px 10px 4px; background: var(--control); font-size: 23px; padding-bottom: 3px; }
-.mh-main { max-width: 1120px; margin: auto; padding: 40px 40px 50px; }
-.mh-daily-title { margin: 0 0 24px; font-size: 22px; font-weight: 600; letter-spacing: -.6px; }
+.mh-main { width: 100%; max-width: var(--site-width); margin: 0 auto; padding: var(--site-main-top) var(--site-gutter) var(--site-main-bottom); }
+.mh-daily-title { margin: 0 0 var(--site-title-gap); font-size: var(--site-title-size); font-weight: 600; line-height: 1.4; letter-spacing: -.6px; }
 .mh-daily-list li > a { min-width: 0; overflow-wrap: anywhere; }
 .mh-daily-list a:focus-visible, .mh-daily-list summary:focus-visible { outline: 2px solid #777; outline-offset: 4px; }
 .mh-daily-list details { interpolate-size: allow-keywords; }
@@ -59,7 +56,7 @@
 /* Existing recommendation entry placeholder. */
 .mh-header-caption { font-size: 13px; color: var(--muted); letter-spacing: -.2px; }
 .mh-eyebrow { color: var(--muted); font-size: 12px; font-weight: 600; letter-spacing: 1px; }
-.mh-entry-main { max-width: 1120px; margin: 0 auto; padding: 38px 40px 72px; }
+.mh-entry-main { width: 100%; max-width: var(--site-width); margin: 0 auto; padding: var(--site-main-top) var(--site-gutter) var(--site-main-bottom); }
 .mh-back-link { display: inline-flex; min-height: 44px; align-items: center; color: var(--muted); font-size: 14px; }
 .mh-entry-card { max-width: 600px; margin: 28px auto 0; padding: 58px 38px; text-align: center; border: 1px solid var(--line); border-radius: 28px; background: var(--paper); }
 .mh-entry-mark { display: grid; place-items: center; width: 64px; height: 64px; margin: 0 auto 26px; border-radius: 23px; color: var(--ink); background: var(--control); font-size: 33px; }
@@ -68,17 +65,11 @@
 .mh-return-button { display: inline-flex; justify-content: center; align-items: center; gap: 24px; margin-top: 30px; padding: 15px 25px; color: var(--ink); background: var(--control); border-radius: 12px; font-size: 14px; font-weight: 600; min-height: 48px; }
 .mh-return-button:hover { background: #eee; }
 @media (max-width: 760px) {
-  .mh-header-inner { min-height: 74px; padding-inline: 24px; }
-  .mh-main { padding: 32px 24px 40px; }
   .mh-history-card { grid-template-columns: 100px minmax(0, 1fr) 96px; column-gap: 22px; }
   .mh-photo { width: 96px; height: 72px; }
   .mh-menu-column h3 { font-size: 18px; }
 }
 @media (max-width: 600px) {
-  .mh-header-inner { min-height: 68px; padding-inline: 20px; }
-  .mh-brand { font-size: 20px; }
-  .mh-main { padding: 26px 20px 30px; }
-  .mh-daily-title { font-size: 20px; margin-bottom: 20px; }
   .mh-daily-list summary { padding: 18px 20px; }
   .mh-daily-list details > ul { padding: 0 20px 20px; }
   .mh-add-menu { min-height: 70px; padding: 20px; gap: 12px; border-radius: 14px; }
@@ -94,7 +85,6 @@
   .mh-photo { width: 64px; height: 58px; border-radius: 8px; }
   .mh-photo-placeholder svg { width: 23px; height: 23px; }
   .mh-header-caption { font-size: 10px; }
-  .mh-entry-main { padding: 24px 18px 40px; }
   .mh-entry-card { margin-top: 18px; padding: 40px 20px; }
   .mh-entry-card h1 { font-size: 27px; }
 }

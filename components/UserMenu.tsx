@@ -1,13 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
+import AuthLink from "./AuthLink";
 import { useCurrentUser } from "@/features/account/useCurrentUser";
 import "@/features/account/account.css";
 
 export default function UserMenu() {
-  const router = useRouter();
   const { user, error, retry } = useCurrentUser();
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
@@ -25,16 +24,13 @@ export default function UserMenu() {
   }, [open]);
 
   async function logout() {
+    if (pending) return;
     setPending(true);
     setLogoutError(false);
     const res = await fetch("/api/auth/logout", { method: "POST" }).catch(() => null);
-    setPending(false);
-    if (!res?.ok) { setLogoutError(true); return; }
-    setOpen(false);
-    retry();
-    window.dispatchEvent(new Event("menuer-auth-change"));
-    router.push("/");
-    router.refresh();
+    if (!res?.ok) { setPending(false); setLogoutError(true); return; }
+    // 보호된 화면의 로그인 검사와 홈 이동이 서로 경쟁하지 않게 새로 이동합니다.
+    window.location.replace("/");
   }
 
   if (error) return <button type="button" className="ac-login" onClick={retry}>로그인 확인 재시도</button>;
@@ -42,9 +38,9 @@ export default function UserMenu() {
 
   if (!user) {
     return (
-      <Link href="/login" className="ac-login">
+      <AuthLink href="/login" className="ac-login">
         로그인
-      </Link>
+      </AuthLink>
     );
   }
 

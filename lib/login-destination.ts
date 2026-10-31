@@ -21,3 +21,9 @@ export function loginDestination(search: string) {
     return `/food-card${query.size ? `?${query}` : ""}`;
   } catch { return "/"; }
 }
+
+// 로그인과 회원가입을 오갈 때도 검증된 복귀 경로를 유지합니다.
+export function authPageHref(page: "/login" | "/login/signup", search: string) {
+  const destination = loginDestination(search);
+  return destination === "/" ? page : `${page}?next=${encodeURIComponent(destination)}`;
+}

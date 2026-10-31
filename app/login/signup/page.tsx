@@ -1,8 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import AuthLink from "@/components/AuthLink";
+import { authPageHref } from "@/lib/login-destination";
 import { buttonClass, inputClass, postAuth } from "../auth";
 
 export default function SignupPage() {
@@ -12,6 +13,7 @@ export default function SignupPage() {
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (pending) return;
     const form = new FormData(e.currentTarget);
     setPending(true);
     setError(null);
@@ -20,9 +22,8 @@ export default function SignupPage() {
       password: form.get("password"),
       nickname: form.get("nickname"),
     });
-    setPending(false);
-    if (err) return setError(err);
-    router.push("/login"); // 가입 후 자동 로그인은 안 됨 (AUTH.md)
+    if (err) { setPending(false); setError(err); return; }
+    router.replace(authPageHref("/login", window.location.search)); // 가입 후 로그인하면서 원래 화면으로 복귀
   }
 
   return (
@@ -31,7 +32,7 @@ export default function SignupPage() {
         onSubmit={onSubmit}
         className="flex w-full max-w-sm flex-col gap-4 rounded-2xl border border-neutral-200 bg-white p-8"
       >
-        <h1 className="text-2xl font-bold text-neutral-900">회원가입</h1>
+        <h1 className="site-page-title">회원가입</h1>
 
         <label className="flex flex-col gap-1 text-sm text-neutral-600">
           이메일
@@ -82,9 +83,9 @@ export default function SignupPage() {
         </button>
         <p className="text-center text-sm text-neutral-500">
           이미 계정이 있나요?{" "}
-          <Link href="/login" className="font-medium text-neutral-900 underline">
+          <AuthLink href="/login" className="font-medium text-neutral-900 underline">
             로그인
-          </Link>
+          </AuthLink>
         </p>
       </form>
     </main>

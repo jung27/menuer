@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { MenuHistoryBrand } from "./MenuHistoryHome";
 import "./MenuHistoryHome.css";
 
 // A scoped placeholder keeps the homepage link usable until the recommendation
@@ -7,12 +6,6 @@ import "./MenuHistoryHome.css";
 export default function MenuRecommendationEntry() {
   return (
     <div className="mh-page" lang="ko">
-      <header className="mh-header">
-        <div className="mh-header-inner">
-          <MenuHistoryBrand />
-          <span className="mh-header-caption">감각으로 고르는 오늘의 메뉴</span>
-        </div>
-      </header>
       <main className="mh-entry-main">
         <Link href="/" className="mh-back-link">← 메뉴 기록으로 돌아가기</Link>
         <section className="mh-entry-card">

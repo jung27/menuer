@@ -8,12 +8,13 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { AccountShell, RequireAccount } from "@/features/account/AccountShell";
 import { COLOR_PALETTE, PHYSICS_FIELDS, SURFACE_PATTERNS, TASTE_FIELDS, emptyCustomFood, parseCustomFood, type CustomFoodDraft, type CustomFood } from "./model";
 import { FoodApiError, foodRequest, imageFromFile, saveFood } from "./client";
+import PageHeading from "@/components/PageHeading";
 
 const FoodPreview = dynamic(() => import("./FoodPreview"), { ssr: false, loading: () => <p className="ac-status">미리보기 준비 중…</p> });
 type NumberKey = keyof typeof PHYSICS_FIELDS;
 
-function Editor() {
-  const router = useRouter(), search = useSearchParams(), editId = search.get("edit") || undefined;
+function Editor({ editId }: { editId?: string }) {
+  const router = useRouter();
   const [draft, setDraft] = useState<CustomFoodDraft>(emptyCustomFood);
   const [loading, setLoading] = useState(!!editId);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -25,11 +26,10 @@ function Editor() {
   const saving = useRef(false);
   const imageVersion = useRef(0);
   useEffect(() => {
-    if (!editId) { setDraft(emptyCustomFood()); setLoadError(null); setLoading(false); return; }
+    if (!editId) return;
     const controller = new AbortController();
-    setLoading(true); setError(null); setLoadError(null);
     foodRequest<{ food: CustomFood }>(`/api/custom-foods/${encodeURIComponent(editId)}`, { signal: controller.signal })
-      .then(({ food }) => setDraft(parseCustomFood(food)))
+      .then(({ food }) => { if (!controller.signal.aborted) setDraft(parseCustomFood(food)); })
       .catch(cause => { if (!controller.signal.aborted) setLoadError(cause instanceof Error ? cause.message : "음식을 불러오지 못했어요."); })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
@@ -61,7 +61,7 @@ function Editor() {
   function color(key: "baseColor" | "crackColor", value: string) { setDraft(current => ({ ...current, physics: { ...current.physics, [key]: value.toUpperCase() } })); }
   if (loading) return <main className="ac-main"><p className="ac-status" role="status">불러오는 중…</p></main>;
   if (loadError) return <main className="ac-main"><Link className="ac-back" href="/custom-foods">← 사용자 지정 음식</Link><p className="ac-error" role="alert">{loadError}</p></main>;
-  return <main className="ac-main ac-editor-main"><Link className="ac-back" href="/custom-foods">← 사용자 지정 음식</Link><h1 className="ac-title">{editId ? "음식 수정" : "음식 추가"}</h1>
+  return <main className="ac-main ac-editor-main"><PageHeading title={editId ? "음식 수정" : "음식 추가"} backHref="/custom-foods" backLabel="사용자 지정 음식" />
     <form onSubmit={event => void submit(event)}>
       {error && <p className="ac-error" role="alert">{error}</p>}
       <fieldset className="ac-fields" disabled={pending}>
@@ -76,5 +76,6 @@ function Editor() {
   </main>;
 }
 export default function CustomFoodEditor() {
-  return <AccountShell><RequireAccount>{user => <Editor key={user.id} />}</RequireAccount></AccountShell>;
+  const editId = useSearchParams().get("edit") || undefined;
+  return <AccountShell><RequireAccount>{user => <Editor key={`${user.id}:${editId ?? ""}`} editId={editId} />}</RequireAccount></AccountShell>;
 }
