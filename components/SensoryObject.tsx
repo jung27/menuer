@@ -976,7 +976,7 @@ export default function SensoryObject({
   value,
   onChange,
 }: SensoryCanvasCardProps) {
-  const [randomSeed, setRandomSeed] = useState(() => Math.random() * 100);
+  const [randomSeed, setRandomSeed] = useState(0);
 
   useEffect(() => {
     if (value === 0) {
