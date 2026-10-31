@@ -2444,14 +2444,12 @@ export default function SensoryObject({
   const [randomSeed, setRandomSeed] = useState(1);
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [audioReady, setAudioReady] = useState(false);
-  const [audioFailed, setAudioFailed] = useState(false);
   useEffect(() => {
     let active = true;
     void prepareSensoryAudio().then(() => {
       if (active) setAudioReady(true);
     }).catch(() => {
       if (active) {
-        setAudioFailed(true);
         setAudioEnabled(false);
         setAudioReady(true);
       }
@@ -2511,20 +2509,6 @@ export default function SensoryObject({
           효과음 준비 중…
         </div>
       )}
-      <button
-        type="button"
-        aria-label={audioEnabled ? "효과음 끄기" : "효과음 켜기"}
-        aria-pressed={audioEnabled}
-        disabled={audioFailed}
-        onClick={() => setAudioEnabled(enabled => !enabled)}
-        className="absolute right-2 top-2 z-20 rounded-full bg-white/90 px-3 py-2 text-xs text-gray-700 shadow"
-      >
-        {audioFailed ? "음원 로딩 실패" : audioEnabled ? "소리 켜짐" : "소리 꺼짐"}
-      </button>
-      <a href="/sounds/credits.txt" target="_blank" rel="noopener noreferrer"
-        className="absolute bottom-1 right-2 z-20 text-[10px] text-gray-500 underline">
-        음원 출처
-      </a>
       {food && (
         <div
           ref={overlayViewport}
