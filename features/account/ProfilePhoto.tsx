@@ -31,8 +31,11 @@ export default function ProfilePhoto({ avatar: initial }: { avatar: string | nul
 
   return (
     <div className="ac-photo">
-      <div className="ac-photo-img">
-        {avatar ? <img src={avatar} alt="프로필 사진" className="ac-avatar" /> : <span aria-hidden>👤</span>}
+      <div className={`ac-photo-img${avatar ? "" : " ac-photo-placeholder"}`}>
+        {avatar ? <img src={avatar} alt="프로필 사진" className="ac-avatar" /> : <svg width="44" height="44" viewBox="0 0 24 24" fill="currentColor" role="img" aria-label="기본 프로필" focusable="false">
+          <circle cx="12" cy="7" r="4" />
+          <path d="M4 21a8 8 0 0 1 16 0v1H4Z" />
+        </svg>}
       </div>
       <div className="ac-photo-actions">
         <label>
