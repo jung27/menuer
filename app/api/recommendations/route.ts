@@ -1,5 +1,5 @@
 import { recommendMenus, recommendFoodCards, sensationKeys, type SensationValues } from "@/lib/recommendations";
-import { getVisitorId } from "@/lib/visitor";
+import { assertSameOrigin, authFailure, requireUser } from "@/lib/auth";
 import { publicRecord, saveRecommendation } from "@/lib/records";
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -11,6 +11,9 @@ function badRequest(message: string) {
 }
 
 export async function POST(request: Request) {
+  let user;
+  try { assertSameOrigin(request); user = await requireUser(); }
+  catch (error) { return authFailure(error); }
   let body: unknown;
   try {
     body = await request.json();
@@ -56,11 +59,10 @@ export async function POST(request: Request) {
   const ratios = Object.fromEntries(sensationKeys.map((key) =>
     [key, (timeMap[key] ?? 0) / totalInteractionMs])) as SensationValues;
 
-  const visitorId = await getVisitorId();
   const values = Object.fromEntries(sensationKeys.map((key) => [key, timeMap[key] ?? 0])) as SensationValues;
   try {
     const saved = await saveRecommendation({
-      visitorId, requestId: body.requestId, inputKind,
+      userId: user.id, requestId: body.requestId, inputKind,
       interactionMs: inputKind === "interactionMs" ? values : null,
       tasteScores: inputKind === "tasteScores" ? values : null,
       totalInteractionMs: inputKind === "interactionMs" ? totalInteractionMs : null,

@@ -5,7 +5,8 @@ import { recommendMenus, type SensationValues } from "@/lib/recommendations";
 
 export type RecommendationRecord = {
   _id: string;
-  visitorId: string;
+  visitorId?: string;
+  userId: string;
   requestId: string;
   createdAt: Date;
   recordDate: string;
@@ -32,7 +33,7 @@ export async function saveRecommendation(input: Omit<RecommendationRecord,
   "_id" | "createdAt" | "recordDate" | "algorithmVersion" | "catalogVersion">) {
   const records = await recordsCollection();
   // 기본 _id 고유 인덱스로 같은 사용자+requestId의 동시 요청도 중복 저장하지 않습니다.
-  const id = createHash("sha256").update(JSON.stringify([input.visitorId, input.requestId])).digest("hex");
+  const id = createHash("sha256").update(JSON.stringify(["account", input.userId, input.requestId])).digest("hex");
   const createdAt = new Date();
   const record: RecommendationRecord = {
     ...input, _id: id, createdAt, recordDate: koreaDate(createdAt),
@@ -44,7 +45,7 @@ export async function saveRecommendation(input: Omit<RecommendationRecord,
   } catch (error) {
     if (!(error instanceof Error && "code" in error && error.code === 11000)) throw error;
   }
-  const saved = await records.findOne({ _id: id, visitorId: input.visitorId });
+  const saved = await records.findOne({ _id: id, userId: input.userId });
   if (!saved) throw new Error("Record was not saved.");
   return saved;
 }
