@@ -14,6 +14,7 @@ import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment
 import type { Food, Tag } from "@/app/food-card/taste";
 import { SensoryAudio, soundForGesture, prepareSensoryAudio } from "@/lib/sensory-audio";
 import { foodSoundPattern } from "@/lib/food-sound";
+import { SensoryHaptics } from "@/lib/sensory-haptics";
 
 // 실제 3D 입체 지오메트리 구조 타입 (단순 2D 텍스처가 아니라 메쉬의 3D 구조와 물리 자체가 다름!)
 export type SurfacePatternType =
@@ -2005,6 +2006,8 @@ function SensoryCard3D({
 }: InternalCardProps) {
   const { camera, gl, size } = useThree();
   const audio = useMemo(() => new SensoryAudio(), []);
+  const haptics = useMemo(() => new SensoryHaptics(), []);
+  useEffect(() => () => haptics.stop(), [haptics, food?.id, soundPattern]);
   useEffect(() => {
     if (audioEnabled) audio.preload(soundPattern);
     else audio.stop(true);
@@ -2266,12 +2269,14 @@ function SensoryCard3D({
     rippleEnergy.current = Math.min(1.3, rippleEnergy.current + 0.7);
     touchHeat.current = Math.min(1.0, touchHeat.current + 0.15);
     if (audioEnabled) audio.play(soundForGesture(soundPattern, false));
+    haptics.start(e.pointerType, soundForGesture(soundPattern, false));
     onInteract(18);
   };
 
   const handleBackgroundPointerDown = (e: ThreeEvent<PointerEvent>) => {
     e.stopPropagation();
     audio.stop();
+    haptics.stop();
     interactionMode.current = "rotate";
     prevPointerScreen.current = { x: e.clientX, y: e.clientY };
   };
@@ -2324,6 +2329,7 @@ function SensoryCard3D({
 
           if (targetDrag.current.length() > 0.02) {
             if (audioEnabled) audio.play(soundForGesture(soundPattern, true));
+            haptics.setKind(soundForGesture(soundPattern, true));
             touchHeat.current = Math.min(1.0, touchHeat.current + 0.012);
             onInteract(1.2);
           }
@@ -2333,6 +2339,7 @@ function SensoryCard3D({
 
     const handleWindowPointerUp = () => {
       audio.stop();
+      haptics.stop();
       if (interactionMode.current !== "none") {
         interactionMode.current = "none";
         targetDrag.current.set(0, 0, 0);
@@ -2355,7 +2362,7 @@ function SensoryCard3D({
       window.removeEventListener("blur", handleWindowPointerUp);
       document.removeEventListener("visibilitychange", handleVisibility);
     };
-  }, [camera, gl, config.maxStretch, config.viscosity, config.fluidity, soundPattern, onInteract, audio, audioEnabled]);
+  }, [camera, gl, config.maxStretch, config.viscosity, config.fluidity, soundPattern, onInteract, audio, audioEnabled, haptics]);
 
   const dummy = useMemo(() => new THREE.Object3D(), []);
   const tempOut = useMemo(() => new THREE.Vector3(), []);
