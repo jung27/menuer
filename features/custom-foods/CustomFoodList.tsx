@@ -82,7 +82,7 @@ function FoodList({ userId }: { userId: string }) {
     {pending && foods.length === 0 ? <p className="ac-status" role="status">불러오는 중…</p> : !error && foods.length === 0 ? <div className="ac-empty">아직 만든 음식이 없어요.</div> : null}
     <ul className="ac-food-list">{foods.map(food => <li key={food.id}><article className="ac-food-item" aria-label={food.name}>
       <Link href={`/custom-foods/new?edit=${encodeURIComponent(food.id)}`} className="ac-food-row"><span className="ac-food-name">{food.name}{food.source && <small>{food.source.authorName}님에게서 가져옴</small>}</span><FoodThumb food={food} /></Link>
-      <div className="ac-food-controls"><div className="ac-food-switches">
+      <div className="ac-food-controls" aria-busy={busy.includes(food.id)}><div className="ac-food-switches">
         <label className="ac-switch-label">추천에 포함<button type="button" role="switch" aria-label={`${food.name} 추천에 포함`} aria-checked={food.recommendationEnabled} disabled={busy.includes(food.id)} className="ac-switch" onClick={() => void settings(food, { recommendationEnabled: !food.recommendationEnabled })}><span /><span className="ac-sr-only">{food.recommendationEnabled ? "ON" : "OFF"}</span></button></label>
         <label className="ac-switch-label">다른 사람에게 공개<button type="button" role="switch" aria-label={`${food.name} 다른 사람에게 공개`} aria-checked={food.published} disabled={busy.includes(food.id)} className="ac-switch" onClick={() => void settings(food, { published: !food.published })}><span /><span className="ac-sr-only">{food.published ? "ON" : "OFF"}</span></button></label>
         </div>
