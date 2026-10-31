@@ -14,6 +14,7 @@ import {
 } from "./taste";
 import "./gauge.css";
 import SensoryObject from "@/components/SensoryObject";
+import ShareButton from "@/app/share/ShareButton";
 
 const SHAKE_ACCEL = 10;
 const SHAKE_HOLD_MS = 300;
@@ -322,6 +323,10 @@ function Result({ taste, onRestart }: { taste: Taste; onRestart: () => void }) {
             <button disabled={saving || !selectionContext} className="mt-4 rounded-xl bg-white px-5 py-2 font-bold text-orange-600 disabled:opacity-50" onClick={() => selectMenu(ranking[0].menuId)}>
               {saving ? "저장 중..." : "메뉴로 선정"}
             </button>
+            <ShareButton
+              menu={ranking[0].name}
+              className="ml-2 mt-4 rounded-xl bg-white/20 px-5 py-2 font-medium"
+            />
           </div>
           <ol className="flex flex-col gap-2">
             {ranking.slice(1).map((f, i) => (
@@ -332,8 +337,14 @@ function Result({ taste, onRestart }: { taste: Taste; onRestart: () => void }) {
                 <span>
                   {i + 2}위 {f.name}
                 </span>
-                <span className="text-gray-500">{Math.round(f.score)}점</span>
-                <button disabled={saving || !selectionContext} aria-label={`${f.name} 메뉴로 선정`} className="rounded-lg bg-orange-100 px-3 py-1 text-orange-800 disabled:opacity-50" onClick={() => selectMenu(f.menuId)}>선정</button>
+                <span className="flex items-center gap-2">
+                  <span className="text-gray-500">{Math.round(f.score)}점</span>
+                  <button disabled={saving || !selectionContext} aria-label={`${f.name} 메뉴로 선정`} className="rounded-lg bg-orange-100 px-3 py-1 text-orange-800 disabled:opacity-50" onClick={() => selectMenu(f.menuId)}>선정</button>
+                  <ShareButton
+                    menu={f.name}
+                    className="rounded-lg border border-gray-300 px-3 py-1 text-gray-600"
+                  />
+                </span>
               </li>
             ))}
           </ol>
