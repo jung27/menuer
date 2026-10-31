@@ -260,6 +260,9 @@ const NOODLE_FOOD_NAMES = new Set([
 ]);
 const FRIED_FOOD_NAMES = new Set([
   "치킨",
+  "후라이드치킨",
+  "간장치킨",
+  "돈가스",
   "돈까스",
   "탕수육",
   "꿔바로우",
@@ -267,7 +270,348 @@ const FRIED_FOOD_NAMES = new Set([
   "닭강정",
 ]);
 
+interface FoodVisualOverride {
+  pattern: SurfacePatternType;
+  innerPattern?: SurfacePatternType;
+  baseColor: string;
+  crackColor: string;
+  crack?: number;
+  roughness?: number;
+  glossiness?: number;
+}
+
+// 음식별 고유 겉/속 컬러 및 2겹 결합 구조(겉 껍데기 + 속 내용물) 정의
+const FOOD_VISUAL_OVERRIDES: Record<string, FoodVisualOverride> = {
+  // [2겹 결합 카드: 겉 토핑/지단/김/소스 껍데기 + 속 쌀밥/면/치즈/고기]
+  오므라이스: {
+    pattern: "broth", // 부드러운 노란 계란 지단 껍질
+    innerPattern: "rice", // 케첩색 볶음밥 쌀알 속
+    baseColor: "#facc15",
+    crackColor: "#ea580c",
+    crack: 0.68,
+    roughness: 0.16,
+    glossiness: 0.88,
+  },
+  초밥: {
+    pattern: "meat", // 선홍빛 주황 연어 네타(횟감) 껍질
+    innerPattern: "rice", // 새하얀 샤리(쌀밥) 속
+    baseColor: "#fb7185",
+    crackColor: "#fffbeb",
+    crack: 0.65,
+    roughness: 0.12,
+    glossiness: 0.95,
+  },
+  규동: {
+    pattern: "meat", // 간장 타레 소스에 조려진 소고기 토핑 껍질
+    innerPattern: "rice", // 하얀 쌀밥 속
+    baseColor: "#78350f",
+    crackColor: "#fffbeb",
+    crack: 0.65,
+    roughness: 0.2,
+    glossiness: 0.85,
+  },
+  카레라이스: {
+    pattern: "broth", // 진한 황금 갈색 카레 루 코팅 껍질
+    innerPattern: "rice", // 하얀 쌀밥 속
+    baseColor: "#b45309",
+    crackColor: "#fffbeb",
+    crack: 0.62,
+    roughness: 0.14,
+    glossiness: 0.9,
+  },
+  가츠동: {
+    pattern: "fried", // 바삭하고 노릇한 돈가스·계란 덮개 껍질
+    innerPattern: "rice", // 하얀 쌀밥 속
+    baseColor: "#d97706",
+    crackColor: "#fffbeb",
+    crack: 0.75,
+    roughness: 0.34,
+    glossiness: 0.65,
+  },
+  김밥: {
+    pattern: "fresh", // 까만 구운 김 껍질
+    innerPattern: "rice", // 하얀 쌀밥 속
+    baseColor: "#1e293b",
+    crackColor: "#fffbeb",
+    crack: 0.65,
+    roughness: 0.35,
+    glossiness: 0.55,
+  },
+  부리토: {
+    pattern: "bread", // 노릇하게 구운 밀 또띠아 껍질
+    innerPattern: "rice", // 매콤한 칠리 라이스 속
+    baseColor: "#d97706",
+    crackColor: "#dc2626",
+    crack: 0.6,
+  },
+  포케: {
+    pattern: "fresh", // 싱그러운 아보카도·채소 토핑 껍질
+    innerPattern: "rice", // 연어·포케 밥 속
+    baseColor: "#16a34a",
+    crackColor: "#fb7185",
+    crack: 0.6,
+  },
+  월남쌈: {
+    pattern: "fresh", // 탱글한 라이스페이퍼·채소 껍질
+    innerPattern: "noodle", // 쌀국수·새우 속
+    baseColor: "#4ade80",
+    crackColor: "#fef9c3",
+    crack: 0.55,
+  },
+  라볶이: {
+    pattern: "tteok", // 매콤달콤 빨간 떡볶이 껍질
+    innerPattern: "noodle", // 노란 라면 사리 속
+    baseColor: "#dc2626",
+    crackColor: "#fde047",
+    crack: 0.58,
+  },
+  피자: {
+    pattern: "bread", // 노릇한 도우·토마토 페퍼로니 크러스트 껍질
+    innerPattern: "tteok", // 쭉 늘어나는 모짜렐라 치즈 속
+    baseColor: "#ea580c",
+    crackColor: "#fef08a",
+    crack: 0.58,
+  },
+  햄버거: {
+    pattern: "bread", // 폭신한 참깨 브리오슈 번 껍질
+    innerPattern: "meat", // 육즙 가득 소고기 패티 속
+    baseColor: "#b45309",
+    crackColor: "#7c2d12",
+    crack: 0.55,
+  },
+  샌드위치: {
+    pattern: "bread", // 담백한 식빵 껍질
+    innerPattern: "meat", // 햄·계란 속
+    baseColor: "#f59e0b",
+    crackColor: "#fb7185",
+    crack: 0.55,
+  },
+  토스트: {
+    pattern: "bread", // 바삭하게 구운 버터 토스트 껍질
+    innerPattern: "meat", // 달콤한 계란·치즈 속
+    baseColor: "#d97706",
+    crackColor: "#fde047",
+    crack: 0.68,
+  },
+  군만두: {
+    pattern: "fried", // 노릇하고 바삭한 만두피 껍질
+    innerPattern: "meat", // 고기 만두소 속
+    baseColor: "#eab308",
+    crackColor: "#92400e",
+    crack: 0.85,
+  },
+  치킨: {
+    pattern: "fried",
+    innerPattern: "meat",
+    baseColor: "#eab308",
+    crackColor: "#fef3c7",
+    crack: 0.95,
+  },
+  후라이드치킨: {
+    pattern: "fried",
+    innerPattern: "meat",
+    baseColor: "#eab308",
+    crackColor: "#fef3c7",
+    crack: 0.92,
+  },
+  간장치킨: {
+    pattern: "fried",
+    innerPattern: "meat",
+    baseColor: "#92400e",
+    crackColor: "#fef3c7",
+    crack: 0.78,
+  },
+  닭강정: {
+    pattern: "fried",
+    innerPattern: "meat",
+    baseColor: "#b91c1c",
+    crackColor: "#fef3c7",
+    crack: 0.78,
+  },
+  돈가스: {
+    pattern: "fried",
+    innerPattern: "meat",
+    baseColor: "#ca8a04",
+    crackColor: "#fda4af",
+    crack: 0.95,
+  },
+  돈까스: {
+    pattern: "fried",
+    innerPattern: "meat",
+    baseColor: "#ca8a04",
+    crackColor: "#fda4af",
+    crack: 0.95,
+  },
+  탕수육: {
+    pattern: "fried",
+    innerPattern: "meat",
+    baseColor: "#d97706",
+    crackColor: "#fffbeb",
+    crack: 0.8,
+  },
+
+  // [단일 질감 카드: 색감이 하얗게 뜨거나 어색했던 메뉴들 보정]
+  비빔밥: {
+    pattern: "rice", // 매콤한 고추장 양념에 비벼진 다홍빛 밥알
+    baseColor: "#dc2626",
+    crackColor: "#fef08a",
+    crack: 0,
+  },
+  볶음밥: {
+    pattern: "rice", // 고슬고슬 노릇하게 볶아진 황금빛 볶음밥
+    baseColor: "#d97706",
+    crackColor: "#fef3c7",
+    crack: 0,
+  },
+  김치볶음밥: {
+    pattern: "rice", // 매콤한 김치볶음밥
+    baseColor: "#e11d48",
+    crackColor: "#fde047",
+    crack: 0,
+  },
+  된장찌개: {
+    pattern: "broth", // 구수한 된장 황토갈색 국물
+    baseColor: "#a16207",
+    crackColor: "#fef3c7",
+    crack: 0,
+  },
+  설렁탕: {
+    pattern: "broth", // 뽀얀 사골 국물
+    baseColor: "#fef3c7",
+    crackColor: "#ffffff",
+    crack: 0,
+  },
+  삼계탕: {
+    pattern: "broth", // 진한 한방 닭육수
+    baseColor: "#fde68a",
+    crackColor: "#fffbeb",
+    crack: 0,
+  },
+  국밥: {
+    pattern: "broth", // 구수한 사골 국밥
+    baseColor: "#fcd34d",
+    crackColor: "#fffbeb",
+    crack: 0,
+  },
+  삼겹살: {
+    pattern: "meat", // 노릇하게 구운 선홍빛 삼겹살 (튀김처럼 깨지지 않도록 crack: 0)
+    baseColor: "#be123c",
+    crackColor: "#fda4af",
+    crack: 0,
+  },
+  불고기: {
+    pattern: "meat", // 달콤짭짤 간장 양념 불고기
+    baseColor: "#78350f",
+    crackColor: "#fca5a5",
+    crack: 0,
+  },
+  찜닭: {
+    pattern: "meat", // 간장 양념 찜닭
+    baseColor: "#854d0e",
+    crackColor: "#fef3c7",
+    crack: 0,
+  },
+  보쌈: {
+    pattern: "meat", // 담백하고 야들야들한 수육
+    baseColor: "#c28e5c",
+    crackColor: "#ffedd5",
+    crack: 0,
+  },
+  족발: {
+    pattern: "meat", // 윤기 흐르는 한방 간장 족발
+    baseColor: "#7c2d12",
+    crackColor: "#fed7aa",
+    crack: 0,
+  },
+  제육볶음: {
+    pattern: "meat", // 매콤한 고추장 제육볶음
+    baseColor: "#dc2626",
+    crackColor: "#fca5a5",
+    crack: 0,
+  },
+  떡볶이: {
+    pattern: "tteok",
+    baseColor: "#dc2626",
+    crackColor: "#ffffff",
+    crack: 0,
+  },
+  떡꼬치: {
+    pattern: "tteok",
+    baseColor: "#e11d48",
+    crackColor: "#ffffff",
+    crack: 0,
+  },
+  순대: {
+    pattern: "tteok", // 찰진 암갈색 순대
+    baseColor: "#451a03",
+    crackColor: "#78350f",
+    crack: 0,
+  },
+  어묵: {
+    pattern: "tteok", // 노릇하고 탱글한 어묵
+    baseColor: "#d97706",
+    crackColor: "#fef3c7",
+    crack: 0,
+  },
+  짜장면: {
+    pattern: "noodle",
+    baseColor: "#3b1707",
+    crackColor: "#fde68a",
+    crack: 0,
+  },
+  냉면: {
+    pattern: "noodle", // 구수한 메밀면 색감 + 시원한 육수 하이라이트
+    baseColor: "#8b7355",
+    crackColor: "#bae6fd",
+    crack: 0,
+  },
+  파스타: {
+    pattern: "noodle", // 토마토·올리브 골든 오렌지 파스타
+    baseColor: "#ea580c",
+    crackColor: "#fde047",
+    crack: 0,
+  },
+  라멘: {
+    pattern: "noodle", // 진한 돈코츠 황금빛 라멘 면발
+    baseColor: "#eab308",
+    crackColor: "#fef9c3",
+    crack: 0,
+  },
+  우동: {
+    pattern: "noodle", // 뽀얗고 통통한 우동 면발
+    baseColor: "#fef08a",
+    crackColor: "#ffffff",
+    crack: 0,
+  },
+  칼국수: {
+    pattern: "noodle",
+    baseColor: "#fde68a",
+    crackColor: "#ffffff",
+    crack: 0,
+  },
+  쌀국수: {
+    pattern: "noodle",
+    baseColor: "#fef9c3",
+    crackColor: "#ffffff",
+    crack: 0,
+  },
+  멸치국수: {
+    pattern: "noodle",
+    baseColor: "#fcd34d",
+    crackColor: "#fef9c3",
+    crack: 0,
+  },
+  볶음면: {
+    pattern: "noodle", // 굴소스 야끼소바 갈색 면발
+    baseColor: "#b45309",
+    crackColor: "#fde68a",
+    crack: 0,
+  },
+};
+
 export function getPatternForFood(food: Food): SurfacePatternType {
+  const override = FOOD_VISUAL_OVERRIDES[food.name];
+  if (override) return override.pattern;
   if (FRESH_FOOD_NAMES.has(food.name)) return "fresh";
   if (TTEOK_FOOD_NAMES.has(food.name) || food.name.includes("떡"))
     return "tteok";
@@ -278,6 +622,17 @@ export function getPatternForFood(food: Food): SurfacePatternType {
   if (FRIED_FOOD_NAMES.has(food.name)) return "fried";
   if ((food.tags["바삭함"] ?? 0) >= 0.4) return "fried";
   if ((food.tags["국물"] ?? 0) >= 0.6) return "broth";
+  return "meat";
+}
+
+export function getInnerPatternForFood(
+  food?: Food,
+  fallbackPattern: SurfacePatternType = "meat",
+): SurfacePatternType {
+  if (!food) return fallbackPattern === "rice" ? "rice" : "meat";
+  const override = FOOD_VISUAL_OVERRIDES[food.name];
+  if (override?.innerPattern) return override.innerPattern;
+  if (RICE_FOOD_NAMES.has(food.name)) return "rice";
   return "meat";
 }
 
@@ -293,11 +648,12 @@ export function derivePhysicsFromFood(
   const crispy = t["바삭함"] ?? 0;
 
   const isCold = COLD_FOOD_NAMES.has(food.name);
+  const override = FOOD_VISUAL_OVERRIDES[food.name];
   const pattern = getPatternForFood(food);
 
   const baseCol = new THREE.Color("#f3d5b5");
   if (pattern === "meat") baseCol.set("#9a3412");
-  if (pattern === "rice") baseCol.set("#fffbeb");
+  if (pattern === "rice") baseCol.set("#f59e0b");
   if (pattern === "tteok") baseCol.set("#fff7ed");
   if (pattern === "bread") baseCol.set("#d97706");
   if (pattern === "noodle") baseCol.set("#fde68a");
@@ -312,10 +668,8 @@ export function derivePhysicsFromFood(
     ? new THREE.Color("#38bdf8")
     : new THREE.Color("#ea580c");
 
-  if (food.name === "짜장면") {
-    baseCol.set("#3b1707");
-  } else if (food.name === "초밥") {
-    baseCol.set("#fff7ed");
+  if (override) {
+    baseCol.set(override.baseColor);
   } else if (!FRESH_FOOD_NAMES.has(food.name)) {
     baseCol.lerp(oilyCol, oily * 0.3);
     baseCol.lerp(crispyCol, crispy * 0.45);
@@ -329,26 +683,28 @@ export function derivePhysicsFromFood(
   }
 
   const innerCol = new THREE.Color("#fffbeb");
-  if (pattern === "tteok") {
-    innerCol.set("#ffffff"); // 뽀얀 쌀떡 속살
+  if (override) {
+    innerCol.set(override.crackColor);
+  } else if (pattern === "tteok") {
+    innerCol.set("#ffffff");
   } else if (spicy >= 0.5) {
     innerCol.set("#fde047").lerp(new THREE.Color("#fb923c"), spicy * 0.6);
   } else if (pattern === "meat") {
-    innerCol.set("#fb7185"); // 선홍빛 육즙 속살
+    innerCol.set("#fb7185");
   } else if (pattern === "bread") {
-    innerCol.set("#fef3c7"); // 폭신한 빵 속살(Crumb)
-  } else if (food.name === "초밥") {
-    innerCol.set("#fb7185"); // 연어/참치 횟감 톤
+    innerCol.set("#fef3c7");
   } else {
     innerCol.copy(baseCol).lerp(new THREE.Color("#ffffff"), 0.45);
   }
 
   const crack =
-    pattern === "fried" || pattern === "fresh"
-      ? Math.max(0.65, crispy)
-      : crispy >= 0.45
-        ? crispy * 0.85
-        : 0;
+    override?.crack !== undefined
+      ? override.crack
+      : pattern === "fried" || pattern === "fresh"
+        ? Math.max(0.65, crispy)
+        : crispy >= 0.6
+          ? crispy * 0.85
+          : 0;
 
   const hardness = THREE.MathUtils.clamp(
     crispy * 0.75 + (pattern === "meat" ? 0.22 : 0) - soupy * 0.2,
@@ -424,7 +780,8 @@ export function derivePhysicsFromFood(
     boil: boilLevel,
     redness: spicy,
     roughness:
-      pattern === "bread"
+      override?.roughness ??
+      (pattern === "bread"
         ? 0.55
         : pattern === "tteok"
           ? 0.08
@@ -434,9 +791,10 @@ export function derivePhysicsFromFood(
                 0.08 + crispy * 0.36 - soupy * 0.15,
                 0.04,
                 0.55,
-              ),
+              )),
     glossiness:
-      pattern === "bread"
+      override?.glossiness ??
+      (pattern === "bread"
         ? 0.25
         : pattern === "tteok"
           ? 0.95
@@ -444,7 +802,7 @@ export function derivePhysicsFromFood(
               0.6 + soupy * 0.4 + oily * 0.3 - crispy * 0.2,
               0.35,
               1.0,
-            ),
+            )),
   };
 }
 
@@ -809,6 +1167,108 @@ function drawSurfacePattern(
       bumpCtx.fill();
     }
     colorCtx.globalAlpha = 1.0;
+  } else if (pattern === "rice") {
+    // 쌀밥/볶음밥/양념밥: 윤기 흐르는 타원형 밥알 입자 질감
+    const riceGrad = colorCtx.createRadialGradient(
+      offsetX + width * 0.5,
+      height * 0.5,
+      50,
+      offsetX + width * 0.5,
+      height * 0.5,
+      width * 0.75,
+    );
+    riceGrad.addColorStop(0, lightHex);
+    riceGrad.addColorStop(0.7, baseColorHex);
+    riceGrad.addColorStop(1, darkHex);
+    colorCtx.fillStyle = riceGrad;
+    colorCtx.fillRect(offsetX, 0, width, height);
+
+    let seed = 211;
+    const rand = () => {
+      seed = (seed * 16807) % 2147483647;
+      return (seed - 1) / 2147483646;
+    };
+    for (let i = 0; i < 420; i++) {
+      const cx = offsetX + rand() * width;
+      const cy = rand() * height;
+      const angle = rand() * Math.PI;
+      colorCtx.save();
+      colorCtx.translate(cx, cy);
+      colorCtx.rotate(angle);
+      colorCtx.beginPath();
+      colorCtx.ellipse(0, 0, 12, 6.5, 0, 0, Math.PI * 2);
+      colorCtx.fillStyle = i % 3 === 0 ? darkHex : lightHex;
+      colorCtx.globalAlpha = 0.32;
+      colorCtx.fill();
+      colorCtx.restore();
+
+      bumpCtx.save();
+      bumpCtx.translate(cx, cy);
+      bumpCtx.rotate(angle);
+      bumpCtx.beginPath();
+      bumpCtx.ellipse(0, 0, 12, 6.5, 0, 0, Math.PI * 2);
+      bumpCtx.fillStyle = i % 3 === 0 ? "#555555" : "#cccccc";
+      bumpCtx.fill();
+      bumpCtx.restore();
+    }
+    colorCtx.globalAlpha = 1.0;
+  } else if (pattern === "broth") {
+    // 국물/소스/계란지단: 부드럽고 윤기 있는 농도 그라데이션과 은은한 결
+    const brothGrad = colorCtx.createRadialGradient(
+      offsetX + width * 0.5,
+      height * 0.45,
+      40,
+      offsetX + width * 0.5,
+      height * 0.5,
+      width * 0.75,
+    );
+    brothGrad.addColorStop(0, lightHex);
+    brothGrad.addColorStop(0.65, baseColorHex);
+    brothGrad.addColorStop(1, darkHex);
+    colorCtx.fillStyle = brothGrad;
+    colorCtx.fillRect(offsetX, 0, width, height);
+
+    for (let i = 0; i < 18; i++) {
+      const y = (i / 18) * height;
+      colorCtx.beginPath();
+      for (let x = 0; x <= width; x += 24) {
+        const wave = Math.sin(x * 0.015 + i * 0.9) * 14;
+        if (x === 0) colorCtx.moveTo(offsetX + x, y + wave);
+        else colorCtx.lineTo(offsetX + x, y + wave);
+      }
+      colorCtx.strokeStyle = i % 2 === 0 ? lightHex : darkHex;
+      colorCtx.globalAlpha = 0.16;
+      colorCtx.lineWidth = 14;
+      colorCtx.stroke();
+    }
+    colorCtx.globalAlpha = 1.0;
+  } else if (pattern === "fresh") {
+    // 채소/김: 아삭한 결 또는 구운 김 특유의 촘촘한 격자 섬유 질감
+    const freshGrad = colorCtx.createRadialGradient(
+      offsetX + width * 0.5,
+      height * 0.5,
+      50,
+      offsetX + width * 0.5,
+      height * 0.5,
+      width * 0.75,
+    );
+    freshGrad.addColorStop(0, lightHex);
+    freshGrad.addColorStop(0.7, baseColorHex);
+    freshGrad.addColorStop(1, darkHex);
+    colorCtx.fillStyle = freshGrad;
+    colorCtx.fillRect(offsetX, 0, width, height);
+
+    for (let i = 0; i < 90; i++) {
+      const y = (i / 90) * height;
+      colorCtx.beginPath();
+      colorCtx.moveTo(offsetX, y);
+      colorCtx.lineTo(offsetX + width, y + Math.sin(i) * 8);
+      colorCtx.strokeStyle = i % 2 === 0 ? lightHex : darkHex;
+      colorCtx.globalAlpha = 0.18;
+      colorCtx.lineWidth = 2.5;
+      colorCtx.stroke();
+    }
+    colorCtx.globalAlpha = 1.0;
   }
 
   colorCtx.restore();
@@ -1140,6 +1600,25 @@ function build3DNoodleBundleCardGeometry(): {
 
   let vertexOffset = 0;
 
+  const pushVertex = (
+    vx: number,
+    vy: number,
+    vz: number,
+    strandId: number,
+    isFront: boolean,
+  ) => {
+    positions.push(vx, vy, vz);
+    groupIds.push(strandId);
+
+    const normU = THREE.MathUtils.clamp(vx / CARD_WIDTH + 0.5, 0.02, 0.98);
+    const normV = THREE.MathUtils.clamp(vy / CARD_HEIGHT + 0.5, 0.02, 0.98);
+    if (isFront) {
+      uvs.push(normU * 0.5, normV);
+    } else {
+      uvs.push(0.5 + normU * 0.5, normV);
+    }
+  };
+
   for (let layer = 0; layer < layers; layer++) {
     const baseZ = (layer === 0 ? 1 : -1) * (CARD_DEPTH * 0.24);
     for (let c = 0; c < cols; c++) {
@@ -1148,57 +1627,93 @@ function build3DNoodleBundleCardGeometry(): {
       const baseX = ratioX * (CARD_WIDTH - tubeRadius * 2.2);
       const phase = c * 0.85 + layer * 1.7;
 
+      const ringSpecs: Array<{ ty: number; yOffset: number; rScale: number }> = [
+        { ty: 0, yOffset: -tubeRadius * 0.28, rScale: 0.68 },
+      ];
       for (let iy = 0; iy <= segsY; iy++) {
-        const ty = iy / segsY;
-        const cy = (ty - 0.5) * (CARD_HEIGHT - tubeRadius * 1.5);
+        ringSpecs.push({ ty: iy / segsY, yOffset: 0, rScale: 1.0 });
+      }
+      ringSpecs.push({ ty: 1, yOffset: tubeRadius * 0.28, rScale: 0.68 });
+
+      const totalRings = ringSpecs.length;
+
+      for (let rIdx = 0; rIdx < totalRings; rIdx++) {
+        const { ty, yOffset, rScale } = ringSpecs[rIdx];
+        const cy = (ty - 0.5) * (CARD_HEIGHT - tubeRadius * 1.5) + yOffset;
         const waveX = Math.sin(ty * Math.PI * 5 + phase) * 0.052;
         const waveZ = Math.cos(ty * Math.PI * 5 + phase) * 0.028;
         const centerX = baseX + waveX;
         const centerZ = baseZ + waveZ;
+        const r = tubeRadius * rScale;
 
         for (let ir = 0; ir < radialSegs; ir++) {
           const angle = (ir / radialSegs) * Math.PI * 2;
           const nx = Math.cos(angle);
           const nz = Math.sin(angle);
 
-          const vx = centerX + nx * tubeRadius;
+          const vx = centerX + nx * r;
           const vy = cy;
-          const vz = centerZ + nz * tubeRadius;
+          const vz = centerZ + nz * r;
 
-          positions.push(vx, vy, vz);
-          groupIds.push(strandId);
-
-          const isFront = vz > 0 && nz > -0.2;
-          const normU = THREE.MathUtils.clamp(
-            vx / CARD_WIDTH + 0.5,
-            0.02,
-            0.98,
-          );
-          const normV = THREE.MathUtils.clamp(
-            vy / CARD_HEIGHT + 0.5,
-            0.02,
-            0.98,
-          );
-          if (isFront) {
-            uvs.push(normU * 0.5, normV);
-          } else {
-            uvs.push(0.5 + normU * 0.5, normV);
-          }
+          pushVertex(vx, vy, vz, strandId, vz > 0 && nz > -0.2);
         }
       }
 
-      for (let iy = 0; iy < segsY; iy++) {
+      for (let rIdx = 0; rIdx < totalRings - 1; rIdx++) {
         for (let ir = 0; ir < radialSegs; ir++) {
           const nextIr = (ir + 1) % radialSegs;
-          const a = vertexOffset + iy * radialSegs + ir;
-          const b = vertexOffset + (iy + 1) * radialSegs + ir;
-          const cIdx = vertexOffset + (iy + 1) * radialSegs + nextIr;
-          const d = vertexOffset + iy * radialSegs + nextIr;
+          const a = vertexOffset + rIdx * radialSegs + ir;
+          const b = vertexOffset + (rIdx + 1) * radialSegs + ir;
+          const cIdx = vertexOffset + (rIdx + 1) * radialSegs + nextIr;
+          const d = vertexOffset + rIdx * radialSegs + nextIr;
           indices.push(a, b, d, b, cIdx, d);
         }
       }
 
-      vertexOffset += (segsY + 1) * radialSegs;
+      // 하단 캡(아랫면) 중심 정점 및 삼각형 닫기
+      const botCenterX = baseX + Math.sin(phase) * 0.052;
+      const botCenterZ = baseZ + Math.cos(phase) * 0.028;
+      const botCenterY =
+        -0.5 * (CARD_HEIGHT - tubeRadius * 1.5) - tubeRadius * 0.52;
+      const bottomPoleIdx = vertexOffset + totalRings * radialSegs;
+      pushVertex(
+        botCenterX,
+        botCenterY,
+        botCenterZ,
+        strandId,
+        botCenterZ > 0,
+      );
+
+      for (let ir = 0; ir < radialSegs; ir++) {
+        const nextIr = (ir + 1) % radialSegs;
+        const a0 = vertexOffset + ir;
+        const d0 = vertexOffset + nextIr;
+        indices.push(bottomPoleIdx, a0, d0);
+      }
+
+      // 상단 캡(윗면) 중심 정점 및 삼각형 닫기
+      const topCenterX = baseX + Math.sin(Math.PI * 5 + phase) * 0.052;
+      const topCenterZ = baseZ + Math.cos(Math.PI * 5 + phase) * 0.028;
+      const topCenterY =
+        0.5 * (CARD_HEIGHT - tubeRadius * 1.5) + tubeRadius * 0.52;
+      const topPoleIdx = vertexOffset + totalRings * radialSegs + 1;
+      const lastRingStart = vertexOffset + (totalRings - 1) * radialSegs;
+      pushVertex(
+        topCenterX,
+        topCenterY,
+        topCenterZ,
+        strandId,
+        topCenterZ > 0,
+      );
+
+      for (let ir = 0; ir < radialSegs; ir++) {
+        const nextIr = (ir + 1) % radialSegs;
+        const aTop = lastRingStart + ir;
+        const dTop = lastRingStart + nextIr;
+        indices.push(topPoleIdx, dTop, aTop);
+      }
+
+      vertexOffset += totalRings * radialSegs + 2;
     }
   }
 
@@ -1345,10 +1860,9 @@ function buildRigidCardCrust(
   pattern: SurfacePatternType,
   randomSeed: number,
 ): RigidCrustData {
-  const baseObj = createSculpted3DCardGeometry(
-    pattern === "fried" ? "fried" : "broth",
-    1.15,
-  );
+  const crustSculptPattern: SurfacePatternType =
+    pattern === "noodle" || pattern === "rice" ? "broth" : pattern;
+  const baseObj = createSculpted3DCardGeometry(crustSculptPattern, 1.15);
   const baseGeo = baseObj.geometry;
   const posAttr = baseGeo.attributes.position;
   const indexAttr = baseGeo.index!;
@@ -1588,14 +2102,24 @@ function SensoryCard3D({
   }, [food?.id, randomSeed]);
 
   const hasCrust = config.crack > 0.05;
+  const innerPattern = useMemo(
+    () =>
+      hasCrust
+        ? getInnerPatternForFood(food, config.pattern)
+        : config.pattern,
+    [hasCrust, food, config.pattern],
+  );
 
   // 1겹: 음식 패턴(면발 다발 / 밥알 군집 / 떡 / 근섬유 육질 / 폭신한 빵 / 국물)에 따라 실제 3D 입체 지오메트리 생성!
   const { innerGeo, innerBasePos, innerGroupIds } = useMemo(() => {
-    const innerPattern = hasCrust ? "meat" : config.pattern;
     const built = createSculpted3DCardGeometry(innerPattern, 1.55);
     const posAttr = built.geometry.attributes.position;
-    const scaleXY = hasCrust ? 0.95 : 1.0;
-    const scaleZ = hasCrust ? 0.55 : 1.0;
+    const scaleXY = hasCrust ? 0.94 : 1.0;
+    const scaleZ = hasCrust
+      ? innerPattern === "rice" || innerPattern === "noodle"
+        ? 0.65
+        : 0.56
+      : 1.0;
     for (let i = 0; i < posAttr.count; i++) {
       posAttr.setXYZ(
         i,
@@ -1610,7 +2134,7 @@ function SensoryCard3D({
       innerBasePos: new Float32Array(posAttr.array),
       innerGroupIds: built.vertexGroupIds,
     };
-  }, [hasCrust, config.pattern]);
+  }, [hasCrust, innerPattern]);
 
   // 2겹: 딱딱한 바깥 껍질 3D 카드 메쉬
   const crustData = useMemo(() => {
@@ -1659,8 +2183,14 @@ function SensoryCard3D({
 
   const innerFleshAtlas = useMemo(() => {
     if (!hasCrust) return null;
-    return createCardAtlasTextures("", "meat", config.crackColor, [], false);
-  }, [hasCrust, config.crackColor]);
+    return createCardAtlasTextures(
+      "",
+      innerPattern,
+      config.crackColor,
+      [],
+      false,
+    );
+  }, [hasCrust, innerPattern, config.crackColor]);
 
   const wispySteamTex = useMemo(() => createWispySteamTexture(), []);
 
@@ -1906,7 +2436,7 @@ function SensoryCard3D({
 
       if (effectiveSquish > 0) {
         const depthMult =
-          config.pattern === "bread" || config.pattern === "tteok"
+          innerPattern === "bread" || innerPattern === "tteok"
             ? 0.34
             : 0.24;
         const dent =
@@ -1929,7 +2459,7 @@ function SensoryCard3D({
         z += rz * (bulge + wave);
       }
 
-      if (config.pattern === "noodle") {
+      if (innerPattern === "noodle") {
         const strandVariance = 0.65 + ((groupId * 7) % 11) * 0.065;
         const strandPull =
           Math.pow(inf, 1.2) * (0.45 + config.viscosity * 0.9) * strandVariance;
@@ -1943,8 +2473,8 @@ function SensoryCard3D({
           smoothInf;
         x += slither;
         z += Math.cos(by * 5.5 + groupId) * slither * 0.65;
-      } else if (config.pattern === "tteok") {
-        // [3D 떡 물리]: 치즈·가래떡처럼 쫀득하게 길게 늘어나면서 당겨진 허리 부분이 부드럽게 수축(Necking)됨
+      } else if (innerPattern === "tteok") {
+        // [3D 떡/치즈 물리]: 치즈·가래떡처럼 쫀득하게 길게 늘어나면서 당겨진 허리 부분이 부드럽게 수축(Necking)됨
         const tteokPull =
           Math.pow(inf, 1.15) * (0.48 + config.viscosity * 0.95);
         x += viscousDrag.current.x * tteokPull;
@@ -1955,7 +2485,7 @@ function SensoryCard3D({
         const neckPinch =
           Math.sin(inf * Math.PI) * Math.min(0.22, stretchLen * 0.14);
         x -= (bx - viscousHit.current.x) * neckPinch;
-      } else if (config.pattern === "meat") {
+      } else if (innerPattern === "meat") {
         // [3D 육질 물리]: 뾰족하게 찢어지던 현상을 없애고, 고기 결을 따라 묵직하고 쫄깃하게 늘어나는 탄성 적용
         const pull = Math.pow(inf, 1.25) * (0.36 + config.viscosity * 0.8);
         x += viscousDrag.current.x * pull;
@@ -1967,7 +2497,7 @@ function SensoryCard3D({
           (viscousDrag.current.length() * 0.035 + pressDepth.current * 0.015) *
           smoothInf;
         z += Math.sign(bz || 1) * grainTension;
-      } else if (config.pattern === "rice") {
+      } else if (innerPattern === "rice") {
         const grainLag = groupId > 0 ? 0.75 + (groupId % 7) * 0.07 : 1.0;
         const pull =
           Math.pow(inf, 1.3) * (0.35 + config.viscosity * 0.85) * grainLag;
@@ -1985,7 +2515,7 @@ function SensoryCard3D({
           y += ry * popOut;
           z += Math.sign(bz || 1) * popOut * 1.4;
         }
-      } else if (config.pattern === "bread") {
+      } else if (innerPattern === "bread") {
         const pull = Math.pow(inf, 1.2) * (0.38 + config.viscosity * 0.85);
         x += viscousDrag.current.x * pull;
         y += viscousDrag.current.y * pull;
@@ -2018,7 +2548,7 @@ function SensoryCard3D({
       config.hardness,
       config.viscosity,
       config.fluidity,
-      config.pattern,
+      innerPattern,
     ],
   );
 
