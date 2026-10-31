@@ -1,4 +1,5 @@
 import Link from "next/link";
+import ShareButton from "@/app/share/ShareButton";
 
 export type Meal = "breakfast" | "lunch" | "dinner";
 
@@ -71,6 +72,12 @@ export default function DailyRecommendations({
                       </span>
                       {menu ?? "추천"}
                     </Link>
+                    {menu && (
+                      <ShareButton
+                        menu={menu}
+                        className="shrink-0 rounded-xl border border-neutral-300 px-3 py-3 text-sm text-neutral-600 hover:bg-neutral-50"
+                      />
+                    )}
                   </li>
                 );
               })}

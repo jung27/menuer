@@ -13,6 +13,7 @@ import {
 } from "./taste";
 import "./gauge.css";
 import SensoryObject from "@/components/SensoryObject";
+import ShareButton from "@/app/share/ShareButton";
 
 const SHAKE_ACCEL = 10;
 const SHAKE_HOLD_MS = 300;
@@ -280,6 +281,10 @@ function Result({ taste, onRestart }: { taste: Taste; onRestart: () => void }) {
               유사도 점수 {Math.round(ranking[0].score)} / 100
             </p>
             <p className="mt-2 text-sm">기록에 저장했어요.</p>
+            <ShareButton
+              menu={ranking[0].name}
+              className="mt-4 rounded-full bg-white/20 px-4 py-1.5 text-sm font-medium"
+            />
           </div>
           <ol className="flex flex-col gap-2">
             {ranking.slice(1).map((f, i) => (
@@ -290,7 +295,13 @@ function Result({ taste, onRestart }: { taste: Taste; onRestart: () => void }) {
                 <span>
                   {i + 2}위 {f.name}
                 </span>
-                <span className="text-gray-500">{Math.round(f.score)}점</span>
+                <span className="flex items-center gap-3 text-gray-500">
+                  {Math.round(f.score)}점
+                  <ShareButton
+                    menu={f.name}
+                    className="rounded-full border border-gray-300 px-3 py-1 text-xs"
+                  />
+                </span>
               </li>
             ))}
           </ol>
