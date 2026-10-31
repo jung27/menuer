@@ -12,6 +12,7 @@ import {
   type Taste,
 } from "./taste";
 import "./gauge.css";
+import SensoryObject, { SensoryPresetType } from "@/components/SensoryObject";
 
 const TAP_PX = 10; // 이보다 덜 움직이고 빨리 떼면 누르기
 const TAP_MS = 300;
@@ -23,6 +24,23 @@ const TICK_MS = 100; // 잡기·흔들기 점수를 반영하는 간격
 const WIGGLE_PX = 15; // 마우스로 흔들 때 한 번 왕복에 필요한 최소 거리
 const WIGGLE_MS = 800; // 이 시간 안에
 const WIGGLE_FLIPS = 2; // 방향을 이만큼 바꾸면 흔들기로 침
+
+// food.tags(Taste 타입)를 기반으로 가장 점수가 높은 태그를 3D 프리셋으로 매핑합니다.
+function getPresetForFood(food?: Food): SensoryPresetType {
+  if (!food || !food.tags) return "crispy";
+
+  const scores: Array<{ type: SensoryPresetType; val: number }> = [
+    { type: "crispy", val: food.tags["바삭함"] ?? 0 },
+    { type: "spicy", val: food.tags["매운맛"] ?? 0 },
+    { type: "hot", val: food.tags["단맛"] ?? 0 }, // 필요시 단맛/기타 매핑 조절 가능
+    { type: "soup", val: food.tags["국물"] ?? 0 },
+    { type: "hearty", val: food.tags["기름짐"] ?? 0 },
+    { type: "chewy", val: food.tags["짠맛"] ?? 0 },
+  ];
+
+  scores.sort((a, b) => b.val - a.val);
+  return scores[0].type;
+}
 
 export default function Home() {
   const [index, setIndex] = useState(0);
@@ -55,7 +73,11 @@ export default function Home() {
       const s = start.current;
       const holding = s && now - s.t > HOLD_DELAY_MS;
       const rate =
-        now < shakingUntil.current ? WEIGHTS.shakePerSec : holding ? WEIGHTS.holdPerSec : 0;
+        now < shakingUntil.current
+          ? WEIGHTS.shakePerSec
+          : holding
+            ? WEIGHTS.holdPerSec
+            : 0;
       if (!rate) return;
       setTaste((t) => applyInteraction(t, food, (rate * TICK_MS) / 1000));
     }, TICK_MS);
@@ -77,9 +99,11 @@ export default function Home() {
 
   async function enableShake() {
     if (typeof DeviceMotionEvent === "undefined") return;
-    // 아이폰은 버튼 클릭 안에서 권한을 요청해야 함
-    const DM = DeviceMotionEvent as unknown as { requestPermission?: () => Promise<string> };
-    if (DM.requestPermission && (await DM.requestPermission()) !== "granted") return;
+    const DM = DeviceMotionEvent as unknown as {
+      requestPermission?: () => Promise<string>;
+    };
+    if (DM.requestPermission && (await DM.requestPermission()) !== "granted")
+      return;
     setShakeOn(true);
   }
 
@@ -115,7 +139,10 @@ export default function Home() {
     // 잡은 채로 빠르게 왔다 갔다 하면 흔들기 (마우스/손가락용)
     const w = wiggle.current;
     const now = Date.now();
-    for (const [axis, v] of [["x", e.clientX], ["y", e.clientY]] as const) {
+    for (const [axis, v] of [
+      ["x", e.clientX],
+      ["y", e.clientY],
+    ] as const) {
       const a = w[axis];
       const d = Math.sign(v - a.last);
       if (d && d !== a.dir) {
@@ -126,7 +153,8 @@ export default function Home() {
       a.last = v;
     }
     w.flips = w.flips.filter((t) => now - t < WIGGLE_MS);
-    if (w.flips.length >= WIGGLE_FLIPS) shakingUntil.current = now + WIGGLE_HOLD_MS;
+    if (w.flips.length >= WIGGLE_FLIPS)
+      shakingUntil.current = now + WIGGLE_HOLD_MS;
   }
 
   function onPointerUp(e: React.PointerEvent) {
@@ -149,6 +177,8 @@ export default function Home() {
   if (done) return <Result taste={taste} onRestart={restart} />;
 
   const gauge = toGauge(taste);
+  const currentPreset = getPresetForFood(food);
+  const interactionValue = Math.round((index / FOODS.length) * 100);
 
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 p-4">
@@ -180,11 +210,12 @@ export default function Home() {
           ‹
         </SkipButton>
         <div
-          className="relative z-10 flex aspect-[3/4] min-w-0 max-w-xs flex-1 cursor-grab touch-none select-none flex-col items-center justify-center gap-6 rounded-3xl bg-white p-6 shadow-xl"
+          className="relative z-10 flex aspect-[3/4] min-w-0 max-w-xs flex-1 cursor-grab touch-none select-none flex-col items-center justify-center gap-6 rounded-3xl bg-white p-6 shadow-xl overflow-hidden"
           style={{
             transform: `translate(${pos.x}px, ${pos.y}px) rotate(${pos.x / 20}deg)`,
-            // 놓으면 살짝 튕기면서 제자리로
-            transition: dragging ? "none" : "transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
+            transition: dragging
+              ? "none"
+              : "transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
           }}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
@@ -195,23 +226,21 @@ export default function Home() {
             setPos({ x: 0, y: 0 });
           }}
         >
-          <p className="text-4xl font-bold">{food.name}</p>
-          <ul className="grid w-full grid-cols-2 gap-x-4 gap-y-2 text-xs text-gray-600">
-            {TAGS.map((t) => (
-              <li key={t}>
-                <div className="flex justify-between">
-                  <span>{t}</span>
-                  <span>{Math.round(food.tags[t] * 100)}</span>
-                </div>
-                <div className="h-1 rounded bg-gray-100">
-                  <div
-                    className="h-full rounded bg-gray-400"
-                    style={{ width: `${food.tags[t] * 100}%` }}
-                  />
-                </div>
-              </li>
-            ))}
-          </ul>
+          {/* 음식 이름 표시 */}
+          <div className="absolute top-4 text-center font-bold text-gray-800 z-20 pointer-events-none">
+            {food.name}
+          </div>
+
+          {/* SensoryObject 3D 캔버스 연동 */}
+          <div className="w-full h-full pt-6">
+            <SensoryObject
+              preset={currentPreset}
+              value={interactionValue}
+              onChange={(val) => {
+                bump(val * 0.01);
+              }}
+            />
+          </div>
         </div>
         <SkipButton label="오른쪽으로 넘기기" onClick={() => skip(1)}>
           ›
@@ -225,7 +254,10 @@ export default function Home() {
         추천 받기
       </button>
       {!shakeOn && (
-        <button className="text-sm text-gray-500 underline" onClick={enableShake}>
+        <button
+          className="text-sm text-gray-500 underline"
+          onClick={enableShake}
+        >
           흔들기 켜기
         </button>
       )}
@@ -233,7 +265,11 @@ export default function Home() {
   );
 }
 
-function SkipButton(props: { label: string; onClick: () => void; children: React.ReactNode }) {
+function SkipButton(props: {
+  label: string;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
   return (
     <button
       aria-label={props.label}
@@ -246,59 +282,98 @@ function SkipButton(props: { label: string; onClick: () => void; children: React
 }
 
 type Ranked = { menuId: string; name: string; score: number; reason: string };
-const API_KEYS = { 매운맛: "spicy", 단맛: "sweet", 짠맛: "salty", 기름짐: "oily", 국물: "soupy", 바삭함: "crispy" } as const;
+const API_KEYS = {
+  매운맛: "spicy",
+  단맛: "sweet",
+  짠맛: "salty",
+  기름짐: "oily",
+  국물: "soupy",
+  바삭함: "crispy",
+} as const;
 
 function Result({ taste, onRestart }: { taste: Taste; onRestart: () => void }) {
   const [ranking, setRanking] = useState<Ranked[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
   const requestId = useRef<string | null>(null);
-  const pending = useRef<{ attempt: number; promise: Promise<Ranked[]> } | null>(null);
-  const body = JSON.stringify(Object.fromEntries(TAGS.map((tag) => [API_KEYS[tag], taste[tag]])));
+  const pending = useRef<{
+    attempt: number;
+    promise: Promise<Ranked[]>;
+  } | null>(null);
+  const body = JSON.stringify(
+    Object.fromEntries(TAGS.map((tag) => [API_KEYS[tag], taste[tag]])),
+  );
 
   useEffect(() => {
     let active = true;
-    // Strict Mode의 effect 재실행도 같은 요청을 공유해 최초 쿠키 생성 경합을 피합니다.
     if (!pending.current || pending.current.attempt !== attempt) {
       requestId.current ??= crypto.randomUUID();
       const promise = fetch("/api/recommendations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ requestId: requestId.current, tasteScores: JSON.parse(body) }),
+        body: JSON.stringify({
+          requestId: requestId.current,
+          tasteScores: JSON.parse(body),
+        }),
       }).then(async (response) => {
         const data = await response.json();
-        if (!response.ok) throw new Error(data.error?.message ?? "추천을 불러오지 못했어요.");
+        if (!response.ok)
+          throw new Error(data.error?.message ?? "추천을 불러오지 못했어요.");
         return data.recommendations as Ranked[];
       });
       pending.current = { attempt, promise };
     }
-    pending.current.promise.then((recommendations) => {
-      if (active) setRanking(recommendations);
-    }).catch((err) => {
-      if (active) setError(err instanceof Error ? err.message : "추천을 불러오지 못했어요.");
-    });
-    return () => { active = false; };
+    pending.current.promise
+      .then((recommendations) => {
+        if (active) setRanking(recommendations);
+      })
+      .catch((err) => {
+        if (active)
+          setError(
+            err instanceof Error ? err.message : "추천을 불러오지 못했어요.",
+          );
+      });
+    return () => {
+      active = false;
+    };
   }, [body, attempt]);
 
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 p-4">
       <h1 className="text-center text-xl font-bold">오늘의 추천 메뉴</h1>
-      {error && <>
-        <p className="text-center text-red-500">{error}</p>
-        <button className="rounded-xl bg-orange-100 p-3" onClick={() => { setError(null); setAttempt((value) => value + 1); }}>다시 요청</button>
-      </>}
-      {!ranking && !error && <p className="text-center text-gray-500">고르는 중...</p>}
+      {error && (
+        <>
+          <p className="text-center text-red-500">{error}</p>
+          <button
+            className="rounded-xl bg-orange-100 p-3"
+            onClick={() => {
+              setError(null);
+              setAttempt((value) => value + 1);
+            }}
+          >
+            다시 요청
+          </button>
+        </>
+      )}
+      {!ranking && !error && (
+        <p className="text-center text-gray-500">고르는 중...</p>
+      )}
       {ranking && ranking.length > 0 && (
         <>
           <div className="rounded-3xl bg-orange-500 p-8 text-center text-white shadow-xl">
             <p className="text-sm">1위</p>
             <p className="text-4xl font-bold">{ranking[0].name}</p>
-            <p className="text-sm">유사도 점수 {Math.round(ranking[0].score)} / 100</p>
+            <p className="text-sm">
+              유사도 점수 {Math.round(ranking[0].score)} / 100
+            </p>
             <p className="mt-2 text-sm">기록에 저장했어요.</p>
           </div>
           <ol className="flex flex-col gap-2">
             {ranking.slice(1).map((f, i) => (
-              <li key={f.menuId} className="flex justify-between rounded-xl bg-white p-3 shadow">
+              <li
+                key={f.menuId}
+                className="flex justify-between rounded-xl bg-white p-3 shadow"
+              >
                 <span>
                   {i + 2}위 {f.name}
                 </span>
