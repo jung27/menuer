@@ -1,0 +1,24 @@
+.recommendation-rank {
+  border: 2px solid #cbd2da;
+  background: #f3f4f6;
+  color: #68717e;
+  box-shadow: inset 0 1px 0 #ffffffb3;
+}
+
+.recommendation-rank[data-rank="1"] {
+  border-color: #b68a30;
+  background: linear-gradient(145deg, #fff0bb, #e8c262);
+  color: #6c4d12;
+}
+
+.recommendation-rank[data-rank="2"] {
+  border-color: #8997a8;
+  background: linear-gradient(145deg, #f6f8fb, #c5ced9);
+  color: #394a5d;
+}
+
+.recommendation-rank[data-rank="3"] {
+  border-color: #a66c43;
+  background: linear-gradient(145deg, #f6d7bc, #ce986f);
+  color: #654027;
+}

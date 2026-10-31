@@ -1,5 +1,6 @@
 "use client";
 import { readApiResponse } from "@/lib/read-api-response";
+import "./recommendation-results.css";
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -421,7 +422,7 @@ function Result({ taste, saved, foods, onRestart, restartPending, restartError }
                   i === 0 ? "col-span-full border-2 border-accent-border p-4" : i > 2 ? "col-span-full" : ""
                 }`}
               >
-                <div className="relative flex items-center justify-center">
+                <div className="relative flex min-h-9 items-center justify-center px-9 text-center">
                   <Medal rank={i + 1} />
                   <span className={`font-bold ${i === 0 ? "text-3xl" : "text-lg"}`}>{f.name}</span>
                 </div>
@@ -431,20 +432,20 @@ function Result({ taste, saved, foods, onRestart, restartPending, restartError }
                     className={i === 0 ? "aspect-[4/3]" : "aspect-square"} />
                 )}
                 <p className="text-center text-xs text-gray-500">유사도 {Math.round(f.score)}점</p>
-                <div className="flex flex-wrap gap-2">
+                <div className="grid min-w-0 grid-cols-2 gap-2">
                   <button
                     data-tutorial={i === 0 ? "result" : undefined}
                     disabled={saving || restartPending || !selectionContext}
                     aria-label={`${f.name} 메뉴로 선정`}
-                    className="flex min-h-11 flex-1 items-center justify-center whitespace-nowrap rounded-xl bg-accent py-2 font-bold text-accent-ink hover:bg-accent-hover disabled:opacity-50"
+                    className="flex min-h-11 min-w-0 w-full items-center justify-center whitespace-nowrap rounded-xl bg-accent px-2 py-2 font-bold text-accent-ink hover:bg-accent-hover disabled:opacity-50"
                     onClick={() => selectMenu(f.menuId)}
                   >
-                    {saving ? "저장 중..." : "선정"}
+                    <span className="min-w-0 truncate">{saving ? "저장 중..." : "선정"}</span>
                   </button>
                   <ShareButton
                     data-tutorial={i === 0 ? "result" : undefined}
                     menu={f.name}
-                    className="flex min-h-11 flex-1 items-center justify-center whitespace-nowrap rounded-xl border border-gray-300 px-3 py-2 text-gray-600"
+                    className="flex min-h-11 min-w-0 w-full items-center justify-center whitespace-nowrap rounded-xl border border-gray-300 px-2 py-2 text-gray-600"
                   />
                 </div>
               </li>
@@ -464,15 +465,12 @@ function Result({ taste, saved, foods, onRestart, restartPending, restartError }
   );
 }
 
-// Warm medals use the same muted UI palette as the primary actions.
-const MEDAL = ["bg-accent text-accent-ink ring-accent-ring", "bg-gray-300 text-white ring-gray-100", "bg-accent-bronze text-accent-ink ring-accent-ring"];
 function Medal({ rank }: { rank: number }) {
   return (
     <span
       aria-label={`${rank}위`}
-      className={`absolute left-0 flex h-7 w-7 items-center justify-center rounded-full text-sm font-bold shadow ring-2 ${
-        MEDAL[rank - 1] ?? "bg-gray-400 text-white ring-gray-200"
-      }`}
+      data-rank={rank}
+      className="recommendation-rank absolute left-0 flex size-8 shrink-0 items-center justify-center rounded-full text-sm font-bold"
     >
       {rank}
     </span>
