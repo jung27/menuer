@@ -26,23 +26,25 @@
   .mh-title-text, .mh-day-date, .mh-meal-label, .mh-meal-name { transform: translateY(.14em); }
 }
 .mh-daily-title { margin: 0 0 var(--site-title-gap); font-size: var(--site-title-size); font-weight: 600; line-height: 1.4; letter-spacing: -.6px; }
-.mh-daily-list { --mh-day-header-height: 82px; --mh-day-gutter: 24px; --mh-meal-height: 58px; }
-.mh-day-summary { min-height: var(--mh-day-header-height); padding-block: 0; gap: 12px; }
+.mh-daily-list { --mh-day-header-height: 82px; --mh-day-gutter: 24px; --mh-meal-height: 58px; --mh-control-size: 40px; --mh-meal-column-gap: 16px; --mh-menu-inline: 16px; --mh-action-size: 20px; }
+.mh-day-summary { min-height: var(--mh-day-header-height); padding-block: 0; padding-inline: var(--mh-day-gutter); gap: 12px; }
 .mh-day-date { white-space: nowrap; font-variant-numeric: tabular-nums; }
-.mh-day-chevron { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 40px; width: 40px; height: 40px; transition: transform 240ms cubic-bezier(.22,1,.36,1); }
+.mh-day-chevron { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 var(--mh-control-size); width: var(--mh-control-size); height: var(--mh-control-size); transition: transform 240ms cubic-bezier(.22,1,.36,1); }
 .mh-day-chevron svg { display: block; }
-.mh-day-share { position: absolute; top: calc((var(--mh-day-header-height) - 40px) / 2); right: calc(var(--mh-day-gutter) + 52px); display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; }
-.mh-daily-list details[open]:has(.mh-day-share) .mh-day-summary { column-gap: 64px; }
+/* Align the daily share's right edge with the menu field; keep the chevron above meal shares. */
+.mh-day-share { position: absolute; top: calc((var(--mh-day-header-height) - var(--mh-control-size)) / 2); right: calc(var(--mh-day-gutter) + var(--mh-control-size) + var(--mh-meal-column-gap)); display: flex; align-items: center; justify-content: center; width: var(--mh-control-size); height: var(--mh-control-size); }
+.mh-daily-list details[open]:has(.mh-day-share) .mh-day-summary { column-gap: calc(var(--mh-control-size) + var(--mh-meal-column-gap) + 8px); }
 .mh-daily-list details:not([open]) .mh-day-share { display: none; }
-.mh-meal-row { display: grid; grid-template-columns: 40px minmax(0, 1fr) 40px; align-items: center; gap: 8px 16px; }
+.mh-meals { padding-inline: var(--mh-day-gutter); }
+.mh-meal-row { display: grid; grid-template-columns: 40px minmax(0, 1fr) var(--mh-control-size); align-items: center; gap: 8px var(--mh-meal-column-gap); }
 .mh-meal-time { grid-column: 1; justify-content: center; gap: 4px; min-height: var(--mh-meal-height); white-space: nowrap; }
-.mh-meal-menu { grid-column: 2; display: flex; align-items: center; gap: 8px; min-width: 0; min-height: var(--mh-meal-height); padding: 12px 16px; line-height: 1.6; }
+.mh-meal-menu { grid-column: 2; display: flex; align-items: center; gap: 8px; min-width: 0; min-height: var(--mh-meal-height); padding: 12px var(--mh-menu-inline); line-height: 1.6; }
 .mh-meals:not(:has(.mh-meal-share)) .mh-meal-menu { grid-column: 2 / -1; }
-.mh-meal-action { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 20px; width: 20px; height: 20px; font-size: 24px; line-height: 1; }
+.mh-meal-action { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 var(--mh-action-size); width: var(--mh-action-size); height: var(--mh-action-size); font-size: 24px; line-height: 1; }
 .mh-meal-action svg { display: block; width: 100%; height: 100%; }
 .mh-meal-retry { margin-left: auto; }
 .mh-meal-name { min-width: 0; word-break: keep-all; overflow-wrap: anywhere; text-wrap: pretty; }
-.mh-meal-share { grid-column: 3; justify-self: end; display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; padding: 0; cursor: pointer; }
+.mh-meal-share { grid-column: 3; justify-self: end; display: inline-flex; align-items: center; justify-content: center; width: var(--mh-control-size); height: var(--mh-control-size); padding: 0; cursor: pointer; }
 .mh-daily-list a:focus-visible, .mh-daily-list summary:focus-visible { outline: 2px solid #777; outline-offset: 4px; }
 .mh-daily-list details { interpolate-size: allow-keywords; }
 .mh-daily-list details::details-content {
@@ -91,14 +93,14 @@
   .mh-menu-column h3 { font-size: 22px; }
 }
 @media (max-width: 600px) {
-  .mh-daily-list { --mh-day-header-height: 78px; --mh-day-gutter: 16px; --mh-meal-height: 54px; }
+  .mh-daily-list { --mh-day-header-height: 78px; --mh-day-gutter: 16px; --mh-meal-height: 54px; --mh-meal-column-gap: 8px; --mh-menu-inline: 8px; --mh-action-size: 16px; }
   .mh-day-summary { padding-inline: var(--mh-day-gutter); }
   .mh-day-date { font-size: 18px; }
   .mh-daily-list details > ul { padding: 0 16px 20px; }
   .mh-meals { gap: 16px; }
-  .mh-meal-row { grid-template-columns: 32px minmax(0, 1fr) 40px; column-gap: 8px; }
-  .mh-meal-menu { gap: 6px; padding: 11px 8px; font-size: 19px; }
-  .mh-meal-action { flex-basis: 16px; width: 16px; height: 16px; font-size: 22px; }
+  .mh-meal-row { grid-template-columns: 32px minmax(0, 1fr) var(--mh-control-size); }
+  .mh-meal-menu { gap: 6px; padding: 11px var(--mh-menu-inline); font-size: 19px; }
+  .mh-meal-action { font-size: 22px; }
   .mh-add-menu { min-height: 70px; padding: 20px; gap: 12px; border-radius: 14px; }
   .mh-add-title { font-size: 21px; }
   .mh-add-icon { font-size: 27px; width: 24px; }
