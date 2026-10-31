@@ -5,6 +5,7 @@ import ShareButton from "@/app/share/ShareButton";
 import Tutorial from "@/components/Tutorial";
 import DailyShareButton from "@/features/sharing/DailyShareButton";
 import useShareFeedbackGroup from "@/features/sharing/useShareFeedbackGroup";
+import MealIcon from "./MealIcon";
 
 export type Meal = "breakfast" | "lunch" | "dinner";
 
@@ -13,10 +14,10 @@ export type DailyMenus = {
   meals: Partial<Record<Meal, string>>; // 정해진 메뉴 이름. 없으면 "+ 추천" 버튼이 나옴
 };
 
-const MEALS: { key: Meal; label: string; icon: string }[] = [
-  { key: "breakfast", label: "아침", icon: "🌅" },
-  { key: "lunch", label: "점심", icon: "☀️" },
-  { key: "dinner", label: "저녁", icon: "🌙" },
+const MEALS: { key: Meal; label: string }[] = [
+  { key: "breakfast", label: "아침" },
+  { key: "lunch", label: "점심" },
+  { key: "dinner", label: "저녁" },
 ];
 
 /**
@@ -53,14 +54,12 @@ export default function DailyRecommendations({
             </summary>
             <DailyShareButton day={day} feedback={shareFeedback.forButton(`${day.date}:day`, day.date)} />
             <ul className="flex flex-col gap-2 px-6 pb-6">
-              {MEALS.map(({ key, label, icon }) => {
+              {MEALS.map(({ key, label }) => {
                 const menu = day.meals[key];
                 return (
                   <li key={key} className="flex items-center gap-4">
                     <span className="flex w-10 shrink-0 flex-col items-center text-xs text-neutral-500">
-                      <span aria-hidden className="text-2xl">
-                        {icon}
-                      </span>
+                      <MealIcon meal={key} />
                       {label}
                     </span>
                     {day.date !== editableDate ? (

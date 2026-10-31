@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { ShareFeedback, ShareStatus } from "@/features/sharing/useShareFeedbackGroup";
+import ShareButtonLabel from "@/features/sharing/ShareButtonLabel";
 
 // 로그인 닉네임은 버튼이 여러 개여도 한 번만 물어봄
 let nicknameOnce: Promise<string> | undefined;
@@ -53,7 +54,7 @@ export default function ShareButton({
 
   return (
     <button {...rest} onClick={share} className={className} aria-label={`${menu} 공유하기`}>
-      {status === "copied" ? "링크 복사됨" : status === "failed" ? "복사 실패" : label}
+      <ShareButtonLabel label={label} status={status} />
     </button>
   );
 }
