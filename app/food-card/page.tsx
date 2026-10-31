@@ -14,25 +14,24 @@ import {
 import "./gauge.css";
 import SensoryObject, { SensoryPresetType } from "@/components/SensoryObject";
 
-const TAP_PX = 10; // 이보다 덜 움직이고 빨리 떼면 누르기
+const TAP_PX = 10;
 const TAP_MS = 300;
-const SHAKE_ACCEL = 10; // m/s², 흔들기 감도
-const WIGGLE_HOLD_MS = 120; // 마우스/손가락이 멈추면 이 시간 뒤 바로 흔들기 끝
-const SHAKE_HOLD_MS = 300; // 폰 흔들기가 멈추면 이 시간 뒤 끝
-const HOLD_DELAY_MS = 400; // 이 시간 넘게 잡고 있어야 '잡고 있기'로 침 (누르기와 구분)
-const TICK_MS = 100; // 잡기·흔들기 점수를 반영하는 간격
-const WIGGLE_PX = 15; // 마우스로 흔들 때 한 번 왕복에 필요한 최소 거리
-const WIGGLE_MS = 800; // 이 시간 안에
-const WIGGLE_FLIPS = 2; // 방향을 이만큼 바꾸면 흔들기로 침
+const SHAKE_ACCEL = 10;
+const WIGGLE_HOLD_MS = 120;
+const SHAKE_HOLD_MS = 300;
+const HOLD_DELAY_MS = 400;
+const TICK_MS = 100;
+const WIGGLE_PX = 15;
+const WIGGLE_MS = 800;
+const WIGGLE_FLIPS = 2;
 
-// food.tags(Taste 타입)를 기반으로 가장 점수가 높은 태그를 3D 프리셋으로 매핑합니다.
 function getPresetForFood(food?: Food): SensoryPresetType {
   if (!food || !food.tags) return "crispy";
 
   const scores: Array<{ type: SensoryPresetType; val: number }> = [
     { type: "crispy", val: food.tags["바삭함"] ?? 0 },
     { type: "spicy", val: food.tags["매운맛"] ?? 0 },
-    { type: "hot", val: food.tags["단맛"] ?? 0 }, // 필요시 단맛/기타 매핑 조절 가능
+    { type: "hot", val: food.tags["단맛"] ?? 0 },
     { type: "soup", val: food.tags["국물"] ?? 0 },
     { type: "hearty", val: food.tags["기름짐"] ?? 0 },
     { type: "chewy", val: food.tags["짠맛"] ?? 0 },
@@ -65,7 +64,6 @@ export default function Home() {
     setTaste((t) => applyInteraction(t, food, w));
   };
 
-  // 잡고 있거나 흔드는 동안 계속 조금씩 음식 점수 쪽으로 다가감
   useEffect(() => {
     if (!food) return;
     const id = setInterval(() => {
@@ -84,7 +82,6 @@ export default function Home() {
     return () => clearInterval(id);
   }, [food]);
 
-  // 폰 흔들기
   useEffect(() => {
     if (!shakeOn) return;
     const onMotion = (e: DeviceMotionEvent) => {
@@ -97,6 +94,55 @@ export default function Home() {
     return () => window.removeEventListener("devicemotion", onMotion);
   }, [shakeOn]);
 
+  // 브라우저 전역에서 카드 넘기기 드래그 유지
+  useEffect(() => {
+    const onPointerMove = (e: PointerEvent) => {
+      const s = start.current;
+      if (!s) return;
+      setPos({ x: e.clientX - s.x, y: e.clientY - s.y });
+
+      const w = wiggle.current;
+      const now = Date.now();
+      for (const [axis, v] of [
+        ["x", e.clientX],
+        ["y", e.clientY],
+      ] as const) {
+        const a = w[axis];
+        const d = Math.sign(v - a.last);
+        if (d && d !== a.dir) {
+          if (Math.abs(a.last - a.from) > WIGGLE_PX) w.flips.push(now);
+          a.dir = d;
+          a.from = a.last;
+        }
+        a.last = v;
+      }
+      w.flips = w.flips.filter((t) => now - t < WIGGLE_MS);
+      if (w.flips.length >= WIGGLE_FLIPS)
+        shakingUntil.current = now + WIGGLE_HOLD_MS;
+    };
+
+    const onPointerUp = (e: PointerEvent) => {
+      const s = start.current;
+      if (!s) return;
+      start.current = null;
+      setDragging(false);
+      const dist = Math.hypot(e.clientX - s.x, e.clientY - s.y);
+      const held = Date.now() - s.t;
+      setPos({ x: 0, y: 0 });
+      if (dist < TAP_PX && held < TAP_MS) bump(WEIGHTS.tap);
+    };
+
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", onPointerUp);
+    window.addEventListener("pointercancel", onPointerUp);
+
+    return () => {
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", onPointerUp);
+      window.removeEventListener("pointercancel", onPointerUp);
+    };
+  }, [food]);
+
   async function enableShake() {
     if (typeof DeviceMotionEvent === "undefined") return;
     const DM = DeviceMotionEvent as unknown as {
@@ -107,14 +153,13 @@ export default function Home() {
     setShakeOn(true);
   }
 
-  // 카드를 dir 방향(-1 왼쪽, 1 오른쪽)으로 날리고 다음 카드로
   function skip(dir: number) {
     if (!food || leaving.current) return;
     leaving.current = true;
     setPos({ x: dir * 600, y: 0 });
     setTimeout(() => {
       leaving.current = false;
-      shakingUntil.current = 0; // 다음 카드로 흔들기가 넘어가지 않게
+      shakingUntil.current = 0;
       setPos({ x: 0, y: 0 });
       setIndex((i) => i + 1);
     }, 200);
@@ -122,50 +167,12 @@ export default function Home() {
 
   function onPointerDown(e: React.PointerEvent) {
     if (leaving.current) return;
-    e.currentTarget.setPointerCapture(e.pointerId);
     start.current = { x: e.clientX, y: e.clientY, t: Date.now() };
     const w = wiggle.current;
     w.x = { last: e.clientX, from: e.clientX, dir: 0 };
     w.y = { last: e.clientY, from: e.clientY, dir: 0 };
     w.flips = [];
     setDragging(true);
-  }
-
-  function onPointerMove(e: React.PointerEvent) {
-    const s = start.current;
-    if (!s) return;
-    setPos({ x: e.clientX - s.x, y: e.clientY - s.y });
-
-    // 잡은 채로 빠르게 왔다 갔다 하면 흔들기 (마우스/손가락용)
-    const w = wiggle.current;
-    const now = Date.now();
-    for (const [axis, v] of [
-      ["x", e.clientX],
-      ["y", e.clientY],
-    ] as const) {
-      const a = w[axis];
-      const d = Math.sign(v - a.last);
-      if (d && d !== a.dir) {
-        if (Math.abs(a.last - a.from) > WIGGLE_PX) w.flips.push(now);
-        a.dir = d;
-        a.from = a.last;
-      }
-      a.last = v;
-    }
-    w.flips = w.flips.filter((t) => now - t < WIGGLE_MS);
-    if (w.flips.length >= WIGGLE_FLIPS)
-      shakingUntil.current = now + WIGGLE_HOLD_MS;
-  }
-
-  function onPointerUp(e: React.PointerEvent) {
-    const s = start.current;
-    if (!s) return;
-    start.current = null;
-    setDragging(false);
-    const dist = Math.hypot(e.clientX - s.x, e.clientY - s.y);
-    const held = Date.now() - s.t;
-    setPos({ x: 0, y: 0 }); // 놓으면 항상 제자리로
-    if (dist < TAP_PX && held < TAP_MS) bump(WEIGHTS.tap);
   }
 
   function restart() {
@@ -210,29 +217,26 @@ export default function Home() {
           ‹
         </SkipButton>
         <div
-          className="relative z-10 flex aspect-[3/4] min-w-0 max-w-xs flex-1 cursor-grab touch-none select-none flex-col items-center justify-center gap-6 rounded-3xl bg-white p-6 shadow-xl overflow-hidden"
+          className="relative z-10 flex aspect-[3/4] min-w-0 max-w-xs flex-1 select-none flex-col items-center justify-center rounded-3xl bg-white p-6 shadow-xl overflow-hidden"
           style={{
             transform: `translate(${pos.x}px, ${pos.y}px) rotate(${pos.x / 20}deg)`,
             transition: dragging
               ? "none"
               : "transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
           }}
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={onPointerUp}
-          onPointerCancel={() => {
-            start.current = null;
-            setDragging(false);
-            setPos({ x: 0, y: 0 });
-          }}
         >
-          {/* 음식 이름 표시 */}
-          <div className="absolute top-4 text-center font-bold text-gray-800 z-20 pointer-events-none">
-            {food.name}
+          {/* 카드 상단 영역 (여기에 마우스를 대고 드래그하면 카드가 움직입니다) */}
+          <div
+            className="absolute top-0 left-0 w-full h-16 z-30 cursor-grab active:cursor-grabbing flex items-center justify-center"
+            onPointerDown={onPointerDown}
+          >
+            <span className="font-bold text-gray-800 bg-white/80 px-4 py-1 rounded-full shadow-sm text-sm">
+              {food.name}
+            </span>
           </div>
 
-          {/* SensoryObject 3D 캔버스 연동 */}
-          <div className="w-full h-full pt-6">
+          {/* 중앙 3D 오브젝트 영역 (3D 모델을 직접 문지르고 누르는 인터랙션 전용) */}
+          <div className="w-full h-full pt-10 pointer-events-auto">
             <SensoryObject
               preset={currentPreset}
               value={interactionValue}
