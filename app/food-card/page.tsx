@@ -8,7 +8,6 @@ import {
   applyInteraction,
   emptyTaste,
   toGauge,
-  toPercent,
   type Food,
   type Taste,
 } from "./taste";
@@ -246,39 +245,64 @@ function SkipButton(props: { label: string; onClick: () => void; children: React
   );
 }
 
-type Ranked = Food & { score: number };
+type Ranked = { menuId: string; name: string; score: number; reason: string };
+const API_KEYS = { 매운맛: "spicy", 단맛: "sweet", 짠맛: "salty", 기름짐: "oily", 국물: "soupy", 바삭함: "crispy" } as const;
 
 function Result({ taste, onRestart }: { taste: Taste; onRestart: () => void }) {
   const [ranking, setRanking] = useState<Ranked[] | null>(null);
-  const [error, setError] = useState(false);
-  const body = JSON.stringify(toPercent(taste));
+  const [error, setError] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
+  const requestId = useRef<string | null>(null);
+  const pending = useRef<{ attempt: number; promise: Promise<Ranked[]> } | null>(null);
+  const body = JSON.stringify(Object.fromEntries(TAGS.map((tag) => [API_KEYS[tag], taste[tag]])));
 
   useEffect(() => {
-    fetch("/food-card/api/recommend", { method: "POST", body })
-      .then((r) => r.json())
-      .then((d) => setRanking(d.ranking))
-      .catch(() => setError(true));
-  }, [body]);
+    let active = true;
+    // Strict Mode의 effect 재실행도 같은 요청을 공유해 최초 쿠키 생성 경합을 피합니다.
+    if (!pending.current || pending.current.attempt !== attempt) {
+      requestId.current ??= crypto.randomUUID();
+      const promise = fetch("/api/recommendations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ requestId: requestId.current, tasteScores: JSON.parse(body) }),
+      }).then(async (response) => {
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error?.message ?? "추천을 불러오지 못했어요.");
+        return data.recommendations as Ranked[];
+      });
+      pending.current = { attempt, promise };
+    }
+    pending.current.promise.then((recommendations) => {
+      if (active) setRanking(recommendations);
+    }).catch((err) => {
+      if (active) setError(err instanceof Error ? err.message : "추천을 불러오지 못했어요.");
+    });
+    return () => { active = false; };
+  }, [body, attempt]);
 
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 p-4">
       <h1 className="text-center text-xl font-bold">오늘의 추천 메뉴</h1>
-      {error && <p className="text-center text-red-500">추천을 불러오지 못했어요.</p>}
+      {error && <>
+        <p className="text-center text-red-500">{error}</p>
+        <button className="rounded-xl bg-orange-100 p-3" onClick={() => { setError(null); setAttempt((value) => value + 1); }}>다시 요청</button>
+      </>}
       {!ranking && !error && <p className="text-center text-gray-500">고르는 중...</p>}
-      {ranking && (
+      {ranking && ranking.length > 0 && (
         <>
           <div className="rounded-3xl bg-orange-500 p-8 text-center text-white shadow-xl">
             <p className="text-sm">1위</p>
             <p className="text-4xl font-bold">{ranking[0].name}</p>
-            <p className="text-sm">일치도 {Math.round(ranking[0].score * 100)}%</p>
+            <p className="text-sm">유사도 점수 {Math.round(ranking[0].score)} / 100</p>
+            <p className="mt-2 text-sm">기록에 저장했어요.</p>
           </div>
           <ol className="flex flex-col gap-2">
             {ranking.slice(1).map((f, i) => (
-              <li key={f.id} className="flex justify-between rounded-xl bg-white p-3 shadow">
+              <li key={f.menuId} className="flex justify-between rounded-xl bg-white p-3 shadow">
                 <span>
                   {i + 2}위 {f.name}
                 </span>
-                <span className="text-gray-500">{Math.round(f.score * 100)}%</span>
+                <span className="text-gray-500">{Math.round(f.score)}점</span>
               </li>
             ))}
           </ol>
