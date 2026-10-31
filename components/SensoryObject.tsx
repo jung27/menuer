@@ -1396,7 +1396,13 @@ function createSculpted3DCardGeometry(
 
   for (let i = 0; i < posAttr.count; i++) {
     temp.fromBufferAttribute(posAttr, i);
-    const isFront = temp.z > halfD * 0.65 ? 1 : 0;
+    const triBase = Math.floor(i / 3) * 3;
+    const triZ =
+      (posAttr.getZ(triBase) +
+        posAttr.getZ(triBase + 1) +
+        posAttr.getZ(triBase + 2)) /
+      3;
+    const isFront = triZ > halfD * 0.65 ? 1 : 0;
     const key = `${Math.round(temp.x * 1000)}_${Math.round(temp.y * 1000)}_${Math.round(temp.z * 1000)}_${isFront}`;
     let idx = vertexMap.get(key);
     if (idx === undefined) {
@@ -1578,7 +1584,7 @@ function build3DNoodleBundleCardGeometry(): {
           const vy = cy;
           const vz = centerZ + nz * r;
 
-          pushVertex(vx, vy, vz, strandId, vz > 0 && nz > -0.2);
+          pushVertex(vx, vy, vz, strandId, layer === 0);
         }
       }
 
@@ -1604,7 +1610,7 @@ function build3DNoodleBundleCardGeometry(): {
         botCenterY,
         botCenterZ,
         strandId,
-        botCenterZ > 0,
+        layer === 0,
       );
 
       for (let ir = 0; ir < radialSegs; ir++) {
@@ -1626,7 +1632,7 @@ function build3DNoodleBundleCardGeometry(): {
         topCenterY,
         topCenterZ,
         strandId,
-        topCenterZ > 0,
+        layer === 0,
       );
 
       for (let ir = 0; ir < radialSegs; ir++) {
@@ -2386,6 +2392,8 @@ function SensoryCard3D({
       const dragCalm = 1 - THREE.MathUtils.smoothstep(viscousDrag.current.length(), 0.02, 0.15);
 
       const effectiveSquish = config.squish * (1 - config.hardness * 0.55);
+      const hitSide = Math.sign(viscousHit.current.z || 1);
+      const zRatio = THREE.MathUtils.clamp(bz / (CARD_DEPTH * 0.35), -1, 1);
 
       if (effectiveSquish > 0) {
         const depthMult =
@@ -2407,10 +2415,16 @@ function SensoryCard3D({
           effectiveSquish *
           0.04;
 
-        z -= Math.sign(bz || 1) * dent;
+        // bz = 0 경계에서 부호가 반전되어 안쪽과 바깥쪽 면이 서로 반대 방향으로 찢어지던 현상을 방지하고, 클릭한 면 방향을 따라 연속적으로 눌리도록 처리
+        const sideAlign = THREE.MathUtils.clamp(
+          (bz * hitSide) / (CARD_DEPTH * 0.35),
+          0,
+          1,
+        );
+        z -= hitSide * dent * (0.35 + 0.65 * sideAlign);
         x += rx * (bulge + wave);
         y += ry * (bulge + wave);
-        z += rz * (bulge + wave);
+        z += zRatio * (bulge + wave);
       }
 
       if (innerPattern === "noodle") {
@@ -2450,7 +2464,7 @@ function SensoryCard3D({
           Math.sin(bx * 5.0 + by * 2.5) *
           (viscousDrag.current.length() * 0.035 + pressDepth.current * 0.015) *
           smoothInf;
-        z += Math.sign(bz || 1) * grainTension;
+        z += zRatio * grainTension;
       } else if (innerPattern === "rice") {
         const grainLag = groupId > 0 ? 0.75 + (groupId % 7) * 0.07 : 1.0;
         const pull =
@@ -2467,7 +2481,7 @@ function SensoryCard3D({
             ((groupId % 5) * 0.25);
           x += rx * popOut;
           y += ry * popOut;
-          z += Math.sign(bz || 1) * popOut * 1.4;
+          z += zRatio * popOut * 1.4;
         }
       } else if (innerPattern === "bread") {
         const pull = Math.pow(inf, 1.2) * (0.38 + config.viscosity * 0.85);
@@ -2476,7 +2490,7 @@ function SensoryCard3D({
         z += viscousDrag.current.z * pull;
 
         const puffUp = activeLevel * 0.08 * (1 - (bx * bx + by * by) * 0.35);
-        z += Math.sign(bz || 1) * Math.max(0, puffUp);
+        z += zRatio * Math.max(0, puffUp);
       } else if (config.viscosity > 0) {
         const pull = Math.pow(inf, 1.25) * (0.35 + config.viscosity * 0.85);
         x += viscousDrag.current.x * pull;
