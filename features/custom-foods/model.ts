@@ -5,7 +5,7 @@ export const TASTE_FIELDS = ["매운맛", "단맛", "짠맛", "기름짐", "국�
 type Physics = Required<SensoryPhysicsProps>;
 type PhysicsNumber = Exclude<keyof Physics, "baseColor" | "crackColor" | "pattern">;
 export const SURFACE_PATTERNS = {
-  fried: "튀김", meat: "고기", noodle: "면", rice: "밥", bread: "빵", broth: "국물", fresh: "채소",
+  fried: "튀김", meat: "고기", noodle: "면", tteok: "떡", rice: "밥", bread: "빵", broth: "국물", fresh: "채소",
 } as const satisfies Record<SurfacePatternType, string>;
 export const PHYSICS_FIELDS: Record<PhysicsNumber, { label: string; min: number; max: number }> = {
   squish: { label: "말랑함", min: 0, max: 1 },
