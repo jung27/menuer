@@ -25,7 +25,6 @@ export default function DailyShareButton({ day, feedback }: { day: DailyMenus; f
   }
   if (!shared.canShare) return null;
   return <div className="absolute right-12 top-3.5">
-    <span role="status" className="sr-only">{status === "copied" ? "링크를 복사했어요." : status === "failed" ? "복사하지 못했어요. 다시 시도해주세요." : ""}</span>
-    <button type="button" aria-label={`${day.date} 하루 전체 공유`} onClick={() => void share()} className="cursor-pointer whitespace-nowrap rounded-xl border border-neutral-300 bg-white px-3 py-2 text-xs font-normal text-neutral-700 hover:bg-neutral-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-500 sm:text-sm"><ShareButtonLabel label="하루 전체 공유" status={status} /></button>
+    <button type="button" aria-label={`${day.date} 하루 전체 공유`} title="하루 전체 공유" onClick={() => void share()} className="inline-flex size-10 cursor-pointer items-center justify-center rounded-xl border border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-500"><ShareButtonLabel label="하루 전체 공유" status={status} iconOnly /></button>
   </div>;
 }

@@ -74,17 +74,17 @@ export default function DailyRecommendations({
                           : "border-dashed border-neutral-300 text-neutral-500 hover:bg-neutral-50"
                       }`}
                     >
-                      <span aria-hidden className="mh-meal-action text-neutral-400">
-                        {menu ? "↻" : "+"}
-                      </span>
+                      {!menu && <span aria-hidden className="mh-meal-action text-neutral-400">+</span>}
                       <span className="mh-meal-name">{menu ?? "추천"}</span>
+                      {menu && <span aria-hidden className="mh-meal-action mh-meal-retry text-neutral-400">↻</span>}
                     </Link>}
                     {menu && (
                       <ShareButton
                         menu={menu}
                         label="공유"
+                        iconOnly
                         feedback={shareFeedback.forButton(`${day.date}:${key}`, day.date)}
-                        className="mh-meal-share rounded-xl border border-neutral-300 px-3 py-3 text-sm text-neutral-600 hover:bg-neutral-50"
+                        className="mh-meal-share rounded-xl border border-neutral-300 text-neutral-600 hover:bg-neutral-50"
                       />
                     )}
                   </li>
