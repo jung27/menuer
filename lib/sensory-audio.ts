@@ -36,7 +36,7 @@ export function soundForGesture(pattern: string, dragging: boolean): SensorySoun
   if (pattern === "broth") return "broth";
   if (pattern === "fresh") return "fresh";
   if (pattern === "fried") return "crunch";
-  if (dragging && (pattern === "noodle" || pattern === "bread")) return "stretch";
+  if (dragging && (pattern === "noodle" || pattern === "bread" || pattern === "tteok")) return "stretch";
   return "squish";
 }
 

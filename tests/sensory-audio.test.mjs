@@ -34,6 +34,8 @@ assert.equal(soundForGesture("fresh", false), "fresh");
 assert.equal(soundForGesture("fried", true), "crunch");
 assert.equal(soundForGesture("noodle", false), "squish");
 assert.equal(soundForGesture("noodle", true), "stretch");
+assert.equal(soundForGesture("tteok", false), "squish");
+assert.equal(soundForGesture("tteok", true), "stretch");
 const audio = new SensoryAudio();
 audio.preload("broth");
 await flush();
