@@ -21,7 +21,9 @@ export default function LoginPage() {
     });
     setPending(false);
     if (err) return setError(err);
-    router.push("/");
+    const next = new URLSearchParams(window.location.search).get("next");
+    const destination = next?.startsWith("/") && !next.startsWith("//") && !next.includes("\\") ? next : "/";
+    router.push(destination);
     router.refresh(); // 로그인 상태가 반영되도록
   }
 

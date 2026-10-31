@@ -2,57 +2,62 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+import { useCurrentUser } from "@/features/account/useCurrentUser";
+import "@/features/account/account.css";
 
-type User = { id: string; email: string; nickname: string };
-
-// 헤더 오른쪽용: 로그인했으면 인사말 + 로그아웃, 아니면 로그인 링크.
 export default function UserMenu() {
   const router = useRouter();
-  // undefined: 확인 중 또는 서버 오류(AUTH.md: 503은 미로그인으로 취급하지 않음), null: 미로그인
-  const [user, setUser] = useState<User | null | undefined>(undefined);
+  const { user, error, retry } = useCurrentUser();
+  const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
-
+  const [logoutError, setLogoutError] = useState(false);
+  const container = useRef<HTMLDivElement>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const panelId = useId();
   useEffect(() => {
-    fetch("/api/auth/me")
-      .then(async (res) => {
-        if (res.ok) setUser((await res.json()).user);
-        else if (res.status === 401) setUser(null);
-      })
-      .catch(() => {});
-  }, []);
+    if (!open) return;
+    function outside(event: PointerEvent) { if (!container.current?.contains(event.target as Node)) setOpen(false); }
+    function escape(event: KeyboardEvent) { if (event.key === "Escape") { setOpen(false); trigger.current?.focus(); } }
+    document.addEventListener("pointerdown", outside);
+    document.addEventListener("keydown", escape);
+    return () => { document.removeEventListener("pointerdown", outside); document.removeEventListener("keydown", escape); };
+  }, [open]);
 
   async function logout() {
     setPending(true);
+    setLogoutError(false);
     const res = await fetch("/api/auth/logout", { method: "POST" }).catch(() => null);
     setPending(false);
-    if (!res?.ok) return;
-    setUser(null);
+    if (!res?.ok) { setLogoutError(true); return; }
+    setOpen(false);
+    retry();
+    router.push("/");
     router.refresh();
   }
 
-  if (user === undefined) return null;
+  if (error) return <button type="button" className="ac-login" onClick={retry}>로그인 확인 재시도</button>;
+  if (user === undefined) return <span className="ac-user-loading" role="status" aria-label="로그인 확인 중" />;
 
   if (!user) {
     return (
-      <Link href="/login" className="text-sm font-medium text-neutral-900 underline">
+      <Link href="/login" className="ac-login">
         로그인
       </Link>
     );
   }
 
   return (
-    <div className="flex items-center gap-3 text-sm">
-      <span className="text-neutral-700">
-        <b className="font-semibold text-neutral-900">{user.nickname}</b>님, 오늘 뭐 드실래요?
-      </span>
-      <button
-        onClick={logout}
-        disabled={pending}
-        className="rounded-full border border-neutral-300 px-3 py-1.5 text-neutral-600 hover:bg-neutral-50 disabled:opacity-50"
-      >
-        로그아웃
+    <div className="ac-user-menu" ref={container}>
+      <button type="button" ref={trigger} className="ac-user-trigger" aria-label="사용자 메뉴" aria-expanded={open} aria-controls={panelId} onClick={() => setOpen(value => !value)}>
+        <svg width="23" height="23" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="8" r="3.5" stroke="currentColor" strokeWidth="1.5" /><path d="M5 21v-2a7 7 0 0 1 14 0v2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
       </button>
+      {open && <nav className="ac-dropdown" id={panelId} aria-label="사용자 메뉴">
+        <Link href="/mypage" onClick={() => setOpen(false)}>마이페이지</Link>
+        <Link href="/custom-foods" onClick={() => setOpen(false)}>사용자 지정 음식</Link>
+        <button type="button" onClick={logout} disabled={pending}>{pending ? "로그아웃 중…" : "로그아웃"}</button>
+        {logoutError && <p role="alert">로그아웃하지 못했어요. 다시 시도해주세요.</p>}
+      </nav>}
     </div>
   );
 }
