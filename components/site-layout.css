@@ -2,20 +2,20 @@
   --site-font: "GangwonEducationModuche", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; /* 글꼴 파일은 app/globals.css */
   --site-width: 1120px;
   --site-gutter: 40px;
-  --site-header-height: 80px;
+  --site-header-height: 56px;
   --site-main-top: 40px;
   --site-main-bottom: 64px;
   --site-title-size: 26px;
   --site-title-gap: 24px;
 }
 
-html { scrollbar-gutter: stable; }
+html { scrollbar-gutter: stable; scroll-padding-top: calc(var(--site-header-height) + 16px); }
 body { font-family: var(--site-font); word-break: keep-all; overflow-wrap: anywhere; }
 button, select { word-break: keep-all; overflow-wrap: normal; }
-.site-header { flex-shrink: 0; width: 100%; border-bottom: 1px solid #e6e6e6; background: #fff4ec; color: #292929; }
+.site-header { position: sticky; top: 0; z-index: 40; flex-shrink: 0; width: 100%; border-bottom: 1px solid #e6e6e6; background: #fff4ec; color: #292929; }
 .site-header-inner { display: flex; align-items: center; justify-content: space-between; gap: 24px; width: 100%; max-width: var(--site-width); min-height: var(--site-header-height); margin-inline: auto; padding-inline: var(--site-gutter); }
 .site-brand { display: inline-flex; align-items: center; gap: 10px; color: inherit; text-decoration: none; font-size: 25px; font-weight: 700; letter-spacing: -.8px; line-height: 1; white-space: nowrap; }
-.site-brand-mark { display: grid; place-items: center; flex-shrink: 0; width: 48px; height: 48px; }
+.site-brand-mark { display: grid; place-items: center; flex-shrink: 0; width: 40px; height: 40px; }
 .site-brand-mark img { display: block; width: 100%; height: 100%; object-fit: contain; }
 .site-brand-name { text-box: trim-both cap alphabetic; }
 @supports not (text-box: trim-both cap alphabetic) {
@@ -27,9 +27,9 @@ button, select { word-break: keep-all; overflow-wrap: normal; }
 .site-page-heading .site-back-link { display: inline-flex; align-items: center; flex-shrink: 0; min-height: 32px; color: #858585; font-size: 17px; text-decoration: none; white-space: nowrap; }
 
 @media (max-width: 760px) {
-  :root { --site-gutter: 24px; --site-header-height: 74px; --site-main-top: 32px; --site-main-bottom: 40px; }
+  :root { --site-gutter: 24px; --site-main-top: 32px; --site-main-bottom: 40px; }
 }
 @media (max-width: 600px) {
-  :root { --site-gutter: 20px; --site-header-height: 68px; --site-main-top: 26px; --site-main-bottom: 32px; --site-title-size: 24px; --site-title-gap: 20px; }
+  :root { --site-gutter: 20px; --site-main-top: 26px; --site-main-bottom: 32px; --site-title-size: 24px; --site-title-gap: 20px; }
   .site-brand { font-size: 24px; }
 }
