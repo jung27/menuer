@@ -36,7 +36,7 @@ export default function DailyRecommendations({
   const shareFeedback = useShareFeedbackGroup();
   return (
     <>
-      {editableDate && <Tutorial step="home" text={"환영해요! 👋\n오늘 아침 메뉴부터 추천받아 볼까요?"} />}
+      {editableDate && <Tutorial step="home" text={"환영해요! 👋\n오늘 아침 메뉴부터 추천받아 볼까요?\n\n📳 진동까지 느끼고 싶다면\n갤럭시에서 크롬이나 삼성 인터넷으로 열어 주세요.\n카카오톡 안에서 열었다면 외부 브라우저로!\n아이폰은 아쉽게도 웹 진동을 지원하지 않아요."} />}
     <ul className="flex flex-col gap-3">
       {days.map((day, i) => (
         <li key={day.date}>
