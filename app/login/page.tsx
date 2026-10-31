@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { buttonClass, inputClass, postAuth } from "./auth";
+import { loginDestination } from "@/lib/login-destination";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -21,7 +22,7 @@ export default function LoginPage() {
     });
     setPending(false);
     if (err) return setError(err);
-    router.push("/");
+    router.replace(loginDestination(window.location.search));
     router.refresh(); // 로그인 상태가 반영되도록
   }
 
