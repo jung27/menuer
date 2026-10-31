@@ -53,6 +53,30 @@ try {
   const savedB = await call("/api/recommendations", b, "POST", body);
   assert.equal(savedB.status, 200);
   assert.notEqual(savedB.data.recordId, saved.data.recordId);
+  const selectionBody = {date:"2026-10-31",meal:"lunch",recordId:saved.data.recordId,menuId:saved.data.recommendations[0].menuId};
+  assert.equal((await call("/api/selections",fresh,"PUT",selectionBody)).status,401);
+  assert.equal((await call("/api/selections",b,"PUT",selectionBody)).status,404);
+  assert.equal((await call("/api/selections",a,"PUT",{...selectionBody,menuId:"not-a-menu"})).status,400);
+  assert.equal((await call("/api/selections",a,"PUT",{...selectionBody,date:"2026-02-30"})).status,400);
+  assert.equal((await call("/api/selections",a,"PUT",{...selectionBody,meal:"snack"})).status,400);
+  assert.equal((await call("/api/selections",a,"PUT",selectionBody,{Origin:"https://other.invalid"})).status,403);
+  const selectionPath="/api/selections?from=2026-10-30&to=2026-10-31";
+  assert.equal((await call("/api/selections",a,"PUT",selectionBody)).status,200);
+  const selected = await call(selectionPath,a);
+  assert.equal(selected.data.days.length,2);
+  assert.equal(selected.data.days[0].meals.lunch.menuId,selectionBody.menuId);
+  assert.equal(selected.data.days[0].meals.breakfast,null);
+  assert.equal(selected.data.days[1].meals.lunch,null);
+  assert.equal((await call(selectionPath,b)).data.days[0].meals.lunch,null);
+  const replacement={...selectionBody,menuId:saved.data.recommendations[1].menuId};
+  const concurrent=await Promise.all(Array.from({length:3},()=>call("/api/selections",a,"PUT",replacement)));
+  assert.ok(concurrent.every(result=>result.status===200));
+  assert.equal((await call(selectionPath,a)).data.days[0].meals.lunch.menuId,replacement.menuId);
+  for (const meal of ["breakfast","dinner"]) assert.equal((await call("/api/selections",a,"PUT",{...selectionBody,meal})).status,200);
+  assert.ok(Object.values((await call(selectionPath,a)).data.days[0].meals).every(Boolean));
+  assert.equal((await call("/api/selections?from=2026-11-01&to=2026-10-31",a)).status,400);
+  assert.equal((await call("/api/selections?from=2025-01-01&to=2026-12-31",a)).status,400);
+  assert.equal((await call(path,a)).data.records.length,1); // 선정·교체는 추천 이력을 변경하지 않음
   const revoked = {cookie:a.cookie};
   assert.equal((await call("/api/auth/logout", a, "POST")).status, 200);
   assert.equal((await call("/api/auth/me", revoked)).status, 401);
@@ -60,10 +84,12 @@ try {
   const anotherBrowser = {cookie:""};
   assert.equal((await call("/api/auth/login", anotherBrowser, "POST", {email:emails[0],password})).status, 200);
   assert.equal((await call(path, anotherBrowser)).data.records[0].recordId, saved.data.recordId);
+  assert.equal((await call(selectionPath,anotherBrowser)).data.days[0].meals.lunch.menuId,replacement.menuId);
   client = new MongoClient(process.env.MONGODB_URI, {serverSelectionTimeoutMS:10000});
   await client.connect();
   const db = client.db(process.env.MONGODB_DB);
   const user = await db.collection("users").findOne({email:emails[0]});
+  assert.equal(await db.collection("selections").countDocuments({userId:user._id,date:"2026-10-31"}),3);
   assert.match(user.passwordHash, /^scrypt-v1\$/);
   assert.equal("password" in user, false);
   const tokenHash = createHash("sha256").update(anotherBrowser.cookie.split("=")[1]).digest("hex");
@@ -72,7 +98,7 @@ try {
   let last;
   for(let i=0;i<11;i++) last=await call("/api/auth/login",b,"POST",{email:emails[1],password:"wrong-password-123"});
   assert.equal(last.status,429);
-  console.log("PASS: signup, duplicate email, validation, login, CSRF, account isolation, idempotency, logout revocation, cross-browser history, password hashing, session expiry, rate limit");
+  console.log("PASS: authentication, records, selection ownership, menu validation, meal slots, replacement, concurrent writes, empty days, date range, cross-browser selections");
 } finally {
   client ??= new MongoClient(process.env.MONGODB_URI, {serverSelectionTimeoutMS:10000});
   try {
@@ -81,6 +107,7 @@ try {
     const users = await db.collection("users").find({email:{$in:emails}}).toArray();
     const userIds = users.map(user=>user._id);
     await db.collection("recommendations").deleteMany({userId:{$in:userIds}});
+    await db.collection("selections").deleteMany({userId:{$in:userIds}});
     await db.collection("sessions").deleteMany({userId:{$in:userIds}});
     await db.collection("users").deleteMany({email:{$in:emails}});
     const window = Math.floor(Date.now() / (15*60*1000));
