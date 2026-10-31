@@ -1440,8 +1440,8 @@ function SensoryCard3D({
     const innerPattern = hasCrust ? "meat" : config.pattern;
     const built = createSculpted3DCardGeometry(innerPattern, 1.55);
     const posAttr = built.geometry.attributes.position;
-    const scaleXY = hasCrust ? 0.9 : 1.0;
-    const scaleZ = hasCrust ? 0.7 : 1.0;
+    const scaleXY = hasCrust ? 0.95 : 1.0;
+    const scaleZ = hasCrust ? 0.55 : 1.0;
     for (let i = 0; i < posAttr.count; i++) {
       posAttr.setXYZ(
         i,
