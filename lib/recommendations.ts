@@ -1,5 +1,5 @@
 import { ADDITIONAL_FOODS, RECOMMENDATION_FOODS } from "./food-catalog";
-import { rank, type Taste } from "@/app/food-card/taste";
+import { rank, type Food, type Taste } from "@/app/food-card/taste";
 
 export const sensationLabels = {
   spicy: "매운맛",
@@ -31,9 +31,8 @@ const menus: Menu[] = [
   { menuId: "samgyeopsal", name: "삼겹살", sensations: { spicy: 0, sweet: 0, salty: 25, oily: 100, soupy: 0, crispy: 30 } },
 ];
 
-export function recommendMenus(ratios: SensationValues) {
-  const additionalMenus: Menu[] = ADDITIONAL_FOODS
-    .filter(food => !menus.some(menu => menu.name === food.name))
+export function recommendMenus(ratios: SensationValues, customFoods: readonly Food[] = []) {
+  const additionalMenus: Menu[] = [...ADDITIONAL_FOODS.filter(food => !menus.some(menu => menu.name === food.name)), ...customFoods]
     .map(food => ({ menuId: food.id, name: food.name,
       sensations: Object.fromEntries(sensationKeys.map(key => [key, food.tags[sensationLabels[key]] * 100])) as SensationValues }));
   return [...menus, ...additionalMenus].map((menu) => {
@@ -58,9 +57,9 @@ export function recommendMenus(ratios: SensationValues) {
 }
 
 // 카드 구성과 독립적인 추천 후보에 기존 코사인 유사도를 적용합니다.
-export function recommendFoodCards(scores: SensationValues) {
+export function recommendFoodCards(scores: SensationValues, customFoods: readonly Food[] = []) {
   const taste = Object.fromEntries(sensationKeys.map((key) => [sensationLabels[key], scores[key]])) as Taste;
-  return rank(taste, RECOMMENDATION_FOODS).map((food, index) => ({
+  return rank(taste, [...RECOMMENDATION_FOODS, ...customFoods]).map((food, index) => ({
     menuId: food.id, name: food.name, rank: index + 1,
     score: Math.round(food.score * 10000) / 100,
     matchedSensations: sensationKeys.filter((key) => scores[key] > 0 && food.tags[sensationLabels[key]] > 0),

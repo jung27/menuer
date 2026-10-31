@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { buildDailyShare } from "../lib/daily-share.ts";
+import { buildDailyShare, parseDailyShare } from "../lib/daily-share.ts";
 
 const empty = { breakfast: null, lunch: null, dinner: null };
 const blank = buildDailyShare("2026-11-01", empty);
@@ -23,4 +23,8 @@ assert.ok(!JSON.stringify(shared).includes("secret"));
 assert.match(shared.shareText, /아침: 김밥/);
 assert.equal(buildDailyShare("2026-11-01", { ...empty, breakfast: { name: "우동" } }).meals.breakfast.name, "우동");
 assert.equal(buildDailyShare("2026-11-01", { breakfast: {name:"김밥"}, lunch:{name:"우동"}, dinner:{name:"치킨"} }).selectedCount, 3);
+assert.equal(parseDailyShare(new URLSearchParams("date=2026-02-30&breakfast=김밥")), null);
+assert.equal(parseDailyShare(new URLSearchParams("date=2026-11-01")), null);
+assert.equal(parseDailyShare(new URLSearchParams(url.search)).meals.dinner.name, "밥 & 면 + 국물/#?");
+assert.equal(parseDailyShare(new URLSearchParams("date=2026-11-01&lunch=" + "밥".repeat(100))).meals.lunch.name.length, 60);
 console.log("PASS: empty/partial/full day, URL encoding, private field exclusion, latest selection");

@@ -2,6 +2,7 @@ import { recommendMenus, recommendFoodCards, sensationKeys, type SensationValues
 import { assertSameOrigin, authFailure, requireUser } from "@/lib/auth";
 import { publicRecord, saveRecommendation } from "@/lib/records";
 import { failureResponse } from "@/lib/server-failure";
+import { customRecommendationFoods } from "@/lib/custom-foods";
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -62,12 +63,13 @@ export async function POST(request: Request) {
 
   const values = Object.fromEntries(sensationKeys.map((key) => [key, timeMap[key] ?? 0])) as SensationValues;
   try {
+    const customFoods = await customRecommendationFoods(user.id);
     const saved = await saveRecommendation({
       userId: user.id, requestId: body.requestId, inputKind,
       interactionMs: inputKind === "interactionMs" ? values : null,
       tasteScores: inputKind === "tasteScores" ? values : null,
       totalInteractionMs: inputKind === "interactionMs" ? totalInteractionMs : null,
-      ratios, recommendations: inputKind === "tasteScores" ? recommendFoodCards(values) : recommendMenus(ratios),
+      ratios, recommendations: inputKind === "tasteScores" ? recommendFoodCards(values, customFoods) : recommendMenus(ratios, customFoods),
     });
     const savedValues = inputKind === "tasteScores" ? saved.tasteScores : saved.interactionMs;
     if ((saved.inputKind ?? "interactionMs") !== inputKind || !savedValues || sensationKeys.some((key) => savedValues[key] !== values[key])) {

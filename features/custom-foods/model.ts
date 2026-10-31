@@ -30,7 +30,14 @@ export const COLOR_PALETTE = [
 ] as const;
 
 export type CustomFoodDraft = { name: string; tags: Taste; physics: Physics; image: string | null };
-export type CustomFood = CustomFoodDraft & { id: string; createdAt: string; updatedAt: string };
+export type CustomFood = CustomFoodDraft & {
+  id: string; createdAt: string; updatedAt: string;
+  recommendationEnabled: boolean; published: boolean; publicId: string | null;
+  source: { id: string; authorName: string } | null;
+};
+export type PublishedFood = CustomFoodDraft & {
+  id: string; authorName: string; publishedAt: string;
+};
 export const MAX_IMAGE_BYTES = 350000;
 export function emptyCustomFood(): CustomFoodDraft {
   return {

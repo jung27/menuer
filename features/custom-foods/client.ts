@@ -8,12 +8,16 @@ export async function foodRequest<T>(path: string, options?: RequestInit): Promi
   const response = await fetch(path, { cache: "no-store", ...options });
   const data = await response.json().catch(() => null);
   if (!response.ok) throw new FoodApiError(response.status, data?.error?.message ?? "음식을 불러오지 못했어요. 다시 시도해주세요.");
+  if (!data || typeof data !== "object") throw new FoodApiError(502, "서버 응답을 확인하지 못했어요. 다시 시도해주세요.");
   return data as T;
 }
-export function saveFood(draft: CustomFoodDraft, id?: string) {
-  return foodRequest<{ food: CustomFood }>(id ? `/api/custom-foods/${encodeURIComponent(id)}` : "/api/custom-foods", {
+export function notifyFoodsChanged() { window.dispatchEvent(new Event("menuer-foods-change")); }
+export async function saveFood(draft: CustomFoodDraft, id?: string) {
+  const result = await foodRequest<{ food: CustomFood }>(id ? `/api/custom-foods/${encodeURIComponent(id)}` : "/api/custom-foods", {
     method: id ? "PATCH" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(draft),
   });
+  notifyFoodsChanged();
+  return result;
 }
 export async function imageFromFile(file: File): Promise<string> {
   if (!["image/png", "image/jpeg", "image/webp"].includes(file.type) || file.size > 8 * 1024 * 1024) throw new Error("PNG, JPG, WEBP 파일을 8MB 이하로 선택해주세요.");

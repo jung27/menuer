@@ -5,6 +5,8 @@ export function loginDestination(search: string) {
   try {
     const url = new URL(next, "https://menuer.local");
     if (url.origin !== "https://menuer.local") return "/";
+    if (url.pathname === "/custom-foods/explore") return `${url.pathname}${url.searchParams.get("q") ? `?q=${encodeURIComponent(url.searchParams.get("q")!.slice(0, 60))}` : ""}`;
+    if (/^\/custom-foods\/explore\/[0-9a-f-]{36}$/i.test(url.pathname)) return url.pathname;
     if (url.pathname === "/custom-foods" || url.pathname === "/mypage") return url.pathname;
     if (url.pathname === "/custom-foods/new") {
       const edit = url.searchParams.get("edit");
