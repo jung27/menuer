@@ -6,13 +6,15 @@ import { selectionDay } from "../lib/selection-date.ts";
 const require = createRequire(import.meta.url);
 require("@next/env").loadEnvConfig(process.cwd());
 const { MongoClient } = require("mongodb");
-const base = "http://localhost:3000";
+const base = process.env.TEST_BASE_URL ?? "http://localhost:3000";
+const timings = [];
 const suffix = randomUUID();
 const emails = [`auth-test-${suffix}-a@example.invalid`, `auth-test-${suffix}-b@example.invalid`];
 const password = `Test-only-${randomUUID()}`;
 const a = { cookie: "" }, b = { cookie: "" }, fresh = { cookie: "" };
 async function call(path, session, method = "GET", body, extra = {}) {
-  const response = await fetch(base + path, { method, headers: {
+  const started = performance.now();
+  const response = await fetch(base + path, { method, signal: AbortSignal.timeout(45000), headers: {
     ...(session.cookie ? { Cookie: session.cookie } : {}),
     ...(body !== undefined ? { "Content-Type": "application/json" } : {}), ...extra,
   }, ...(body !== undefined ? { body: JSON.stringify(body) } : {}) });
@@ -23,17 +25,28 @@ async function call(path, session, method = "GET", body, extra = {}) {
       session.cookie = cookie.split(";")[0];
     }
   }
-  const data = await response.json();
+  const text = await response.text();
+  assert.ok(text.length > 0, `${method} ${path}: empty response (${response.status})`);
+  let data;
+  try { data = JSON.parse(text); }
+  catch { throw new Error(`${method} ${path}: non-JSON response (${response.status})`); }
+  timings.push({ path: path.split("?")[0], status: response.status, ms: Math.round(performance.now() - started) });
+  assert.ok(response.status < 500, `${method} ${path}: ${response.status}, ${data.error?.code}, errorId=${data.error?.errorId}`);
   return { status: response.status, data };
 }
 let client;
 try {
+  // Verify cleanup access before creating test accounts on either server.
+  client = new MongoClient(process.env.MONGODB_URI, {serverSelectionTimeoutMS:10000});
+  await client.connect();
+  await client.db(process.env.MONGODB_DB).command({ping:1});
   assert.equal((await call("/api/auth/me", fresh)).status, 401);
   assert.equal((await call("/api/records?date=2026-10-31", fresh)).status, 401);
   assert.equal((await call("/api/recommendations", fresh, "POST", {})).status, 401);
   assert.equal((await call("/api/auth/signup", fresh, "POST", {email:emails[0],password:"short",nickname:"test"})).status, 400);
   for (const email of emails) {
     assert.equal((await call("/api/auth/signup", fresh, "POST", {email,password,nickname:"통합테스트"})).status, 201);
+    assert.ok(await client.db(process.env.MONGODB_DB).collection("users").findOne({email}), "API and cleanup database must match");
   }
   assert.equal((await call("/api/auth/signup", fresh, "POST", {email:emails[0].toUpperCase(),password,nickname:"duplicate"})).status, 409);
   assert.equal((await call("/api/auth/login", a, "POST", {email:emails[0],password:"wrong-password-123"})).status, 401);
@@ -44,16 +57,23 @@ try {
   assert.equal((await call("/api/auth/login", b, "POST", {email:emails[1],password})).status, 200);
   assert.equal((await call("/api/auth/me", a)).data.user.id, loginA.data.user.id);
   const body = {requestId:`test-${suffix}`,tasteScores:{spicy:0.2,sweet:0.1,salty:0.3,oily:0.5,soupy:0,crispy:0.5}};
-  const saved = await call("/api/recommendations", a, "POST", body);
+  const simultaneous = await Promise.all(Array.from({length:4}, () => call("/api/recommendations", a, "POST", body)));
+  const saved = simultaneous[0];
+  assert.ok(simultaneous.every(result => result.status === 200 && result.data.recordId === saved.data.recordId));
   assert.equal(saved.status, 200);
   assert.equal(saved.data.saved, true);
   assert.equal((await call("/api/recommendations", a, "POST", body)).data.recordId, saved.data.recordId);
+  const conflict = await call("/api/recommendations", a, "POST", {...body,tasteScores:{...body.tasteScores,spicy:0.9}});
+  assert.equal(conflict.status,409);
+  assert.equal(conflict.data.error.code,"REQUEST_ID_CONFLICT");
   const path = `/api/records?date=${saved.data.recordDate}`;
   assert.equal((await call(path, a)).data.records.length, 1);
   assert.equal((await call(path, b)).data.records.length, 0);
   const savedB = await call("/api/recommendations", b, "POST", body);
   assert.equal(savedB.status, 200);
   assert.notEqual(savedB.data.recordId, saved.data.recordId);
+  const concurrentLogins = await Promise.all(Array.from({length:4}, (_,i) => call("/api/auth/login", {cookie:""}, "POST", {email:emails[i%2],password})));
+  assert.ok(concurrentLogins.every(result => result.status === 200));
   const {today, yesterday} = selectionDay();
   const tomorrow = new Date(new Date(`${today}T00:00:00Z`).getTime()+86400000).toISOString().slice(0,10);
   const selectionBody = {date:today,meal:"lunch",recordId:saved.data.recordId,menuId:saved.data.recommendations[0].menuId};
@@ -95,8 +115,6 @@ try {
   assert.equal((await call("/api/auth/login", anotherBrowser, "POST", {email:emails[0],password})).status, 200);
   assert.equal((await call(path, anotherBrowser)).data.records[0].recordId, saved.data.recordId);
   assert.equal((await call(selectionPath,anotherBrowser)).data.meals.lunch.menuId,replacement.menuId);
-  client = new MongoClient(process.env.MONGODB_URI, {serverSelectionTimeoutMS:10000});
-  await client.connect();
   const db = client.db(process.env.MONGODB_DB);
   const user = await db.collection("users").findOne({email:emails[0]});
   assert.equal(await db.collection("selections").countDocuments({userId:user._id,date:today}),3);
@@ -115,6 +133,8 @@ try {
   for(let i=0;i<11;i++) last=await call("/api/auth/login",b,"POST",{email:emails[1],password:"wrong-password-123"});
   assert.equal(last.status,429);
   console.log("PASS: authentication, records, selection ownership, menu validation, meal slots, replacement, concurrent writes, empty days, date range, cross-browser selections");
+  console.log("PASS: 4 simultaneous logins, 4 identical recommendation requests, requestId conflict, valid JSON responses");
+  console.log(JSON.stringify({base,requests:timings.length,serverErrors:timings.filter(t=>t.status>=500).length,slowest:timings.toSorted((a,b)=>b.ms-a.ms).slice(0,5)}));
 } finally {
   client ??= new MongoClient(process.env.MONGODB_URI, {serverSelectionTimeoutMS:10000});
   try {
