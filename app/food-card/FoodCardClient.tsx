@@ -15,6 +15,7 @@ import {
   type Taste,
 } from "./taste";
 import SensoryObject, {
+  StatDonutBadge,
   VISIBLE_SENSORY_TAGS,
 } from "@/components/SensoryObject";
 import ShareButton from "@/app/share/ShareButton";
@@ -112,21 +113,15 @@ function Home({ initialFoods }: { initialFoods: Food[] }) {
 
   return (
     <main className="mx-auto flex w-full min-w-0 max-w-2xl flex-1 flex-col gap-3 overflow-x-clip p-4">
-      {/* 외부로 드러나는 4대 물리 감각 특성(매운맛·바삭함·국물·기름짐)만 표시 */}
-      <ul className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+      {/* 6대 미각·식감 추천 기준(매운맛·단맛·짠맛·기름짐·국물·바삭함)을 대표 아이콘 중심의 도넛 게이지로 표시 */}
+      <ul className="grid grid-cols-6 gap-2 py-1">
         {VISIBLE_SENSORY_TAGS.map((t) => (
-          <li key={t} aria-label={`${t} ${gauge[t]}%`}>
-            <div className="flex justify-between">
-              <span>{t}</span>
-              {/* 숫자는 글자로 직접 표시 (CSS 카운터 애니메이션은 사파리에서 순간적으로 0이 뜸) */}
-              <span className="tabular-nums">{gauge[t]}%</span>
-            </div>
-            <div className="h-1.5 rounded bg-gray-200">
-              <div
-                className="h-full rounded bg-accent"
-                style={{ width: `${gauge[t]}%`, transition: "width 0.15s linear" }}
-              />
-            </div>
+          <li
+            key={t}
+            aria-label={t}
+            className="flex items-center justify-center"
+          >
+            <StatDonutBadge tag={t} ratio={gauge[t] / 100} size={44} />
           </li>
         ))}
       </ul>

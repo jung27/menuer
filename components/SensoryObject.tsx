@@ -54,16 +54,18 @@ export type SensoryPresetType =
   | "hearty"
   | "chewy";
 
-// 외부로 드러나는 물리·시각 특성만 표시 (단맛, 짠맛 제외)
+// 6대 미각·식감 특성 전체 표시 (매운맛, 단맛, 짠맛, 기름짐, 국물, 바삭함)
 export const VISIBLE_SENSORY_TAGS: Tag[] = [
   "매운맛",
-  "바삭함",
-  "국물",
+  "단맛",
+  "짠맛",
   "기름짐",
+  "국물",
+  "바삭함",
 ];
 
-// 0% 초과 특성 중 최대 3개까지만 카드에 표시
-export const MAX_VISIBLE_STATS = 3;
+// 0% 초과 특성 전체(최대 6개)를 카드에 도넛 아이콘으로 표시
+export const MAX_VISIBLE_STATS = 6;
 
 export const SENSORY_PRESETS: Record<
   SensoryPresetType,
@@ -833,12 +835,149 @@ const CARD_HEIGHT = 2.16;
 const CARD_DEPTH = 0.28;
 const CARD_BEVEL = 0.075;
 
-const STAT_HEX_COLORS: Record<string, string> = {
+export const STAT_HEX_COLORS: Record<string, string> = {
   매운맛: "#ef4444",
+  단맛: "#ec4899",
+  짠맛: "#6366f1",
   기름짐: "#eab308",
   국물: "#0ea5e9",
   바삭함: "#f2a46d", // UI accent; food surface colors remain independent.
 };
+
+export function StatIcon({
+  tag,
+  color = "currentColor",
+  size = 18,
+}: {
+  tag: string;
+  color?: string;
+  size?: number;
+}) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {tag === "매운맛" ? (
+        <path d="M12 2c.5 3.5-2 5.5-2 9a4 4 0 0 0 8 0c0-2-1-3.5-1.5-5 2.5 1.5 4.5 4.5 4.5 8a9 9 0 1 1-18 0c0-4.5 3.5-8.5 9-12Z" />
+      ) : tag === "단맛" ? (
+        <>
+          <circle cx="12" cy="12" r="4.5" />
+          <path d="M7.5 12 3 8.5v7L7.5 12ZM16.5 12 21 8.5v7L16.5 12Z" />
+        </>
+      ) : tag === "짠맛" ? (
+        <>
+          <path d="M8 7h8l1.5 13H6.5L8 7Z" />
+          <path d="M9 4h6v3H9V4Z" />
+          <circle cx="10.5" cy="13" r="0.8" fill={color} />
+          <circle cx="13.5" cy="13" r="0.8" fill={color} />
+          <circle cx="12" cy="16" r="0.8" fill={color} />
+        </>
+      ) : tag === "기름짐" ? (
+        <>
+          <path d="M12 2.5C12 2.5 5.5 10 5.5 14.8a6.5 6.5 0 0 0 13 0C18.5 10 12 2.5 12 2.5Z" />
+          <path d="M9.5 15a2.5 2.5 0 0 0 2.5 2.5" />
+        </>
+      ) : tag === "국물" ? (
+        <>
+          <path d="M4 13h16a8 8 0 0 1-16 0Z" />
+          <path d="M9 5c0 1.5-1.5 2-1.5 3.5M15 5c0 1.5-1.5 2-1.5 3.5" />
+        </>
+      ) : (
+        <path d="m12 2 2.4 5.2L20 6l-3.2 4.7L21 14l-5.5 1.1L16 21l-4-3.8L8 21l.5-5.9L3 14l4.2-3.3L4 6l5.6 1.2L12 2Z" />
+      )}
+    </svg>
+  );
+}
+
+export function StatDonutBadge({
+  tag,
+  ratio,
+  size = 44,
+  dark = false,
+  showLabel = true,
+}: {
+  tag: string;
+  ratio: number;
+  size?: number;
+  dark?: boolean;
+  showLabel?: boolean;
+}) {
+  const clamped = Math.max(0, Math.min(1, ratio));
+  const strokeWidth = Math.max(3.5, size * 0.1);
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const dashOffset = circumference * (1 - clamped);
+  const color = STAT_HEX_COLORS[tag] ?? "#f2a46d";
+  const trackColor = dark ? "rgba(255,255,255,0.2)" : "rgba(15,23,42,0.12)";
+
+  return (
+    <div
+      className="inline-flex flex-col items-center gap-1"
+      aria-label={tag}
+      title={tag}
+    >
+      <div
+        className="relative flex items-center justify-center"
+        style={{ width: size, height: size }}
+      >
+        <svg
+          width={size}
+          height={size}
+          viewBox={`0 0 ${size} ${size}`}
+          className="-rotate-90"
+          aria-hidden="true"
+        >
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            fill="none"
+            stroke={trackColor}
+            strokeWidth={strokeWidth}
+          />
+          {clamped > 0 && (
+            <circle
+              cx={size / 2}
+              cy={size / 2}
+              r={radius}
+              fill="none"
+              stroke={color}
+              strokeWidth={strokeWidth}
+              strokeDasharray={circumference}
+              strokeDashoffset={dashOffset}
+              strokeLinecap="round"
+              style={{ transition: "stroke-dashoffset 0.2s ease-out" }}
+            />
+          )}
+        </svg>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <StatIcon
+            tag={tag}
+            color={dark ? "#ffffff" : color}
+            size={Math.round(size * 0.44)}
+          />
+        </div>
+      </div>
+      {showLabel && (
+        <span
+          className={`text-[11px] font-semibold leading-none ${
+            dark ? "text-white/90" : "text-gray-700"
+          }`}
+        >
+          {tag}
+        </span>
+      )}
+    </div>
+  );
+}
 
 const PATTERN_LABELS: Record<SurfacePatternType, string> = {
   meat: "3D 입체 근섬유 육질 블록",
@@ -1261,48 +1400,170 @@ function createCardAtlasTextures(
     colorCtx.fillText(title, halfW / 2, 130);
 
     if (stats.length > 0) {
-      const rowH = 56;
-      const panelH = stats.length * rowH + 44;
-      const panelY = height - panelH - 48;
+      const cols = stats.length <= 3 ? stats.length : Math.ceil(stats.length / 2);
+      const rows = Math.ceil(stats.length / cols);
+      const rowH = 98;
+      const panelH = rows * rowH + 30;
+      const panelY = height - panelH - 44;
+      const panelW = halfW - 64;
 
-      drawRoundRect(colorCtx, 32, panelY, halfW - 64, panelH, 30);
-      colorCtx.fillStyle = "rgba(15, 23, 42, 0.75)";
+      drawRoundRect(colorCtx, 32, panelY, panelW, panelH, 30);
+      colorCtx.fillStyle = "rgba(15, 23, 42, 0.76)";
       colorCtx.fill();
       colorCtx.lineWidth = 3;
       colorCtx.strokeStyle = "rgba(255, 255, 255, 0.35)";
       colorCtx.stroke();
 
+      const drawCanvasStatIcon = (
+        ctx: CanvasRenderingContext2D,
+        tag: string,
+        cx: number,
+        cy: number,
+        r: number,
+      ) => {
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.strokeStyle = "#ffffff";
+        ctx.fillStyle = "#ffffff";
+        ctx.lineWidth = 2.8;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        const s = r * 0.48;
+
+        if (tag === "매운맛") {
+          // 불꽃 아이콘
+          ctx.beginPath();
+          ctx.moveTo(0, -s);
+          ctx.bezierCurveTo(s * 0.9, -s * 0.3, s, s * 0.5, 0, s);
+          ctx.bezierCurveTo(-s, s * 0.5, -s * 0.9, -s * 0.3, 0, -s);
+          ctx.closePath();
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(0, s * 0.25, s * 0.28, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (tag === "단맛") {
+          // 사탕 아이콘
+          ctx.beginPath();
+          ctx.arc(0, 0, s * 0.46, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(-s * 0.46, 0);
+          ctx.lineTo(-s, -s * 0.45);
+          ctx.lineTo(-s, s * 0.45);
+          ctx.closePath();
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(s * 0.46, 0);
+          ctx.lineTo(s, -s * 0.45);
+          ctx.lineTo(s, s * 0.45);
+          ctx.closePath();
+          ctx.stroke();
+        } else if (tag === "짠맛") {
+          // 소금통/결정 아이콘
+          ctx.beginPath();
+          ctx.moveTo(-s * 0.45, -s * 0.45);
+          ctx.lineTo(s * 0.45, -s * 0.45);
+          ctx.lineTo(s * 0.62, s * 0.85);
+          ctx.lineTo(-s * 0.62, s * 0.85);
+          ctx.closePath();
+          ctx.stroke();
+          ctx.fillRect(-s * 0.32, -s * 0.82, s * 0.64, s * 0.32);
+          for (const [dx, dy] of [
+            [-0.2, 0.1],
+            [0.2, 0.1],
+            [0, 0.45],
+          ]) {
+            ctx.beginPath();
+            ctx.arc(dx * s, dy * s, 2.2, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        } else if (tag === "기름짐") {
+          // 기름방울 아이콘
+          ctx.beginPath();
+          ctx.moveTo(0, -s * 0.95);
+          ctx.bezierCurveTo(s * 0.85, -s * 0.1, s * 0.85, s * 0.85, 0, s * 0.92);
+          ctx.bezierCurveTo(
+            -s * 0.85,
+            s * 0.85,
+            -s * 0.85,
+            -s * 0.1,
+            0,
+            -s * 0.95,
+          );
+          ctx.closePath();
+          ctx.stroke();
+        } else if (tag === "국물") {
+          // 김 나는 국그릇 아이콘
+          ctx.beginPath();
+          ctx.arc(0, s * 0.08, s * 0.78, 0, Math.PI, false);
+          ctx.closePath();
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(-s * 0.3, -s * 0.25);
+          ctx.quadraticCurveTo(-s * 0.45, -s * 0.55, -s * 0.2, -s * 0.85);
+          ctx.moveTo(s * 0.3, -s * 0.25);
+          ctx.quadraticCurveTo(s * 0.15, -s * 0.55, s * 0.4, -s * 0.85);
+          ctx.stroke();
+        } else {
+          // 바삭함 크래커/스파크 별 아이콘
+          const spikes = 8;
+          ctx.beginPath();
+          for (let i = 0; i < spikes * 2; i++) {
+            const rad = i % 2 === 0 ? s * 0.95 : s * 0.45;
+            const ang = (i * Math.PI) / spikes - Math.PI / 2;
+            const px = Math.cos(ang) * rad;
+            const py = Math.sin(ang) * rad;
+            if (i === 0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
+          }
+          ctx.closePath();
+          ctx.stroke();
+        }
+        ctx.restore();
+      };
+
       stats.forEach(([label, val], idx) => {
-        const pct = Math.round(val * 100);
-        const ry = panelY + 26 + idx * rowH;
-
+        const clamped = Math.max(0, Math.min(1, val));
+        const rIdx = Math.floor(idx / cols);
+        const cIdx = idx % cols;
+        const itemsInThisRow =
+          rIdx === rows - 1 ? stats.length - rIdx * cols : cols;
+        const cellW = panelW / itemsInThisRow;
+        const cx = 32 + cellW * (cIdx + 0.5);
+        const cy = panelY + 46 + rIdx * rowH;
+        const ringRadius = 29;
+        const ringStroke = 8;
         const badgeColor = STAT_HEX_COLORS[label] ?? "#f2a46d";
-        drawRoundRect(colorCtx, 52, ry, 96, 38, 12);
-        colorCtx.fillStyle = badgeColor;
-        colorCtx.fill();
 
-        colorCtx.fillStyle = badgeColor === "#f2a46d" ? "#633d25" : "#ffffff";
+        // 도넛 배경 트랙
+        colorCtx.beginPath();
+        colorCtx.arc(cx, cy, ringRadius, 0, Math.PI * 2);
+        colorCtx.strokeStyle = "rgba(255, 255, 255, 0.2)";
+        colorCtx.lineWidth = ringStroke;
+        colorCtx.stroke();
+
+        // 도넛 퍼센테이지 게이지 호 (12시 방향 시작)
+        if (clamped > 0) {
+          const startAngle = -Math.PI / 2;
+          const endAngle = startAngle + Math.PI * 2 * clamped;
+          colorCtx.beginPath();
+          colorCtx.arc(cx, cy, ringRadius, startAngle, endAngle);
+          colorCtx.strokeStyle = badgeColor;
+          colorCtx.lineWidth = ringStroke;
+          colorCtx.lineCap = "round";
+          colorCtx.stroke();
+        }
+
+        // 중앙 대표 아이콘
+        drawCanvasStatIcon(colorCtx, label, cx, cy, ringRadius);
+
+        // 하단 속성명 캡션 (퍼센테이지 텍스트는 표기하지 않음)
+        colorCtx.fillStyle = "rgba(255, 255, 255, 0.92)";
         colorCtx.font =
-          "800 21px -apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif";
+          "800 17px -apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif";
         colorCtx.textAlign = "center";
         colorCtx.textBaseline = "middle";
-        colorCtx.fillText(label, 100, ry + 20);
-
-        const barX = 164;
-        const barW = 224;
-        drawRoundRect(colorCtx, barX, ry + 11, barW, 16, 8);
-        colorCtx.fillStyle = "rgba(255, 255, 255, 0.24)";
-        colorCtx.fill();
-
-        const fillW = Math.max(12, (barW * pct) / 100);
-        drawRoundRect(colorCtx, barX, ry + 11, fillW, 16, 8);
-        colorCtx.fillStyle = "#ffffff";
-        colorCtx.fill();
-
-        colorCtx.fillStyle = "#ffffff";
-        colorCtx.font = "800 22px monospace";
-        colorCtx.textAlign = "right";
-        colorCtx.fillText(`${pct}%`, halfW - 52, ry + 20);
+        colorCtx.fillText(label, cx, cy + ringRadius + 18);
       });
     }
   }
@@ -2120,6 +2381,8 @@ function SensoryCard3D({
     const fallback: Array<[string, number]> = [
       ["바삭함", config.crack],
       ["매운맛", config.shake],
+      ["단맛", config.inflate * 0.5],
+      ["짠맛", config.hardness * 0.5],
       ["국물", config.fluidity],
       ["기름짐", config.viscosity],
     ];
@@ -2127,7 +2390,15 @@ function SensoryCard3D({
       .filter(([, val]) => val > 0)
       .sort((a, b) => b[1] - a[1])
       .slice(0, MAX_VISIBLE_STATS);
-  }, [food, config.crack, config.shake, config.fluidity, config.viscosity]);
+  }, [
+    food,
+    config.crack,
+    config.shake,
+    config.inflate,
+    config.hardness,
+    config.fluidity,
+    config.viscosity,
+  ]);
 
   const surfaceAtlas = useMemo(() => {
     const title = food ? food.name : presetLabel;
@@ -2954,7 +3225,9 @@ function SensoryCard3D({
 
 function FoodLabel({ food }: { food: Food }) {
   const foodStats = useMemo(() => {
-    return (Object.entries(food.tags) as Array<[Tag, number]>)
+    return VISIBLE_SENSORY_TAGS.map(
+      (tag) => [tag, food.tags[tag] ?? 0] as [Tag, number],
+    )
       .filter(([, v]) => v > 0)
       .sort((a, b) => b[1] - a[1]);
   }, [food]);
@@ -2967,29 +3240,17 @@ function FoodLabel({ food }: { food: Food }) {
         </h2>
       </div>
 
-      <div className="bg-black/45 backdrop-blur-md rounded-xl p-2.5 border border-white/15 flex flex-col gap-1.5">
+      <div className="bg-black/45 backdrop-blur-md rounded-xl p-2.5 border border-white/15 flex flex-wrap items-center justify-center gap-2">
         {foodStats.length > 0 ? (
-          foodStats.map(([tag, val]) => {
-            const pct = Math.round(val * 100);
-            return (
-              <div key={tag} className="flex items-center gap-1.5 text-[13px]">
-                <span
-                  className={`px-1.5 py-0.5 rounded font-bold text-xs shrink-0 ${tag === "바삭함" ? "bg-accent text-accent-ink" : STAT_HEX_COLORS[tag]}`}
-                >
-                  {tag}
-                </span>
-                <div className="flex-1 h-1.5 bg-white/20 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-white rounded-full"
-                    style={{ width: `${pct}%` }}
-                  />
-                </div>
-                <span className="font-mono font-bold text-xs w-9 shrink-0 text-right">
-                  {pct}%
-                </span>
-              </div>
-            );
-          })
+          foodStats.map(([tag, val]) => (
+            <StatDonutBadge
+              key={tag}
+              tag={tag}
+              ratio={val}
+              size={38}
+              dark
+            />
+          ))
         ) : (
           <p className="text-center text-xs text-white/75">담백한 기본 스탯</p>
         )}

@@ -8,6 +8,7 @@ import { foodRequest } from "./client";
 import { SURFACE_PATTERNS, TASTE_FIELDS, type PublishedFood } from "./model";
 import ImportFoodButton from "./ImportFoodButton";
 import PageHeading from "@/components/PageHeading";
+import { StatDonutBadge } from "@/components/SensoryObject";
 
 const FoodPreview = dynamic(() => import("./FoodPreview"), { ssr: false, loading: () => <p className="ac-status">미리보기 준비 중…</p> });
 function PublicFoodContent({ publicId }: { publicId: string }) {
@@ -25,7 +26,7 @@ function PublicFoodContent({ publicId }: { publicId: string }) {
     {error ? <div role="alert" className="ac-error">{error} <button onClick={retry}>다시 확인</button></div> : !food ? <p role="status" className="ac-status">불러오는 중…</p> : <>
       <p className="ac-author">{food.authorName}님이 만든 음식</p>
       <div className="ac-public-preview"><div className="ac-preview"><FoodPreview draft={food} /></div><aside className="ac-public-info">{food.image && <Image src={food.image} alt={`${food.name} 그림`} width={180} height={140} unoptimized />}<p>{SURFACE_PATTERNS[food.physics.pattern]} 질감</p><ImportFoodButton publicId={food.id} /></aside></div>
-      <section className="ac-editor-section"><h2>감각</h2><dl className="ac-taste-summary">{TASTE_FIELDS.map(tag => <div key={tag}><dt>{tag}</dt><dd>{Math.round(food.tags[tag] * 100)}%</dd></div>)}</dl></section>
+      <section className="ac-editor-section"><h2>감각</h2><div className="flex flex-wrap items-center justify-around gap-3 py-2">{TASTE_FIELDS.map(tag => <StatDonutBadge key={tag} tag={tag} ratio={food.tags[tag]} size={46} />)}</div></section>
     </>}
   </main>;
 }
