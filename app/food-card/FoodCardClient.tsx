@@ -4,6 +4,7 @@ import { readApiResponse } from "@/lib/read-api-response";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { FOODS } from "./foods";
+import { shuffle } from "./shuffle";
 import {
   TAGS,
   WEIGHTS,
@@ -22,7 +23,8 @@ const SHAKE_ACCEL = 10;
 const SHAKE_HOLD_MS = 300;
 const TICK_MS = 100;
 
-export default function Home() {
+export default function Home({ initialFoods }: { initialFoods: Food[] }) {
+  const [foods, setFoods] = useState(initialFoods);
   const [index, setIndex] = useState(0);
   const [taste, setTaste] = useState(emptyTaste);
   const [cardDamage, setCardDamage] = useState(0);
@@ -31,7 +33,7 @@ export default function Home() {
   const [finished, setFinished] = useState(false);
   const leaving = useRef(false);
 
-  const food: Food | undefined = FOODS[index];
+  const food: Food | undefined = foods[index];
   const done = finished || !food;
 
   const bump = (w: number) => {
@@ -54,6 +56,7 @@ export default function Home() {
   }
 
   function restart() {
+    setFoods(shuffle(FOODS));
     setIndex(0);
     setCardDamage(0);
     setTaste(emptyTaste());
@@ -87,7 +90,7 @@ export default function Home() {
 
       <div className="flex items-center justify-between px-1">
         <p className="text-sm text-gray-500">
-          카드 {index + 1} / {FOODS.length}
+          카드 {index + 1} / {foods.length}
         </p>
         <button
           type="button"
