@@ -1,11 +1,11 @@
 // Milliseconds: vibration, pause, vibration... No amplitude control on the web.
 export const HAPTIC_PATTERNS: Record<string, { pulse: number[]; interval: number }> = {
-  crunch: { pulse: [12, 35, 18], interval: 260 },
-  fresh: { pulse: [10, 65, 10], interval: 340 },
-  bread: { pulse: [14], interval: 380 },
-  broth: { pulse: [12, 55, 16, 90, 10], interval: 410 },
-  squish: { pulse: [35], interval: 310 },
-  stretch: { pulse: [25, 55, 40], interval: 250 },
+  crunch: { pulse: [45, 25, 55], interval: 210 },
+  fresh: { pulse: [40, 45, 40], interval: 260 },
+  bread: { pulse: [45], interval: 280 },
+  broth: { pulse: [40, 35, 55, 60, 40], interval: 310 },
+  squish: { pulse: [80], interval: 220 },
+  stretch: { pulse: [55, 35, 75], interval: 210 },
 };
 
 export class SensoryHaptics {
