@@ -708,17 +708,14 @@ function createCardAtlasTextures(
     colorCtx.strokeStyle = "rgba(255, 255, 255, 0.42)";
     colorCtx.stroke();
 
+    // 노란색 패턴 설명 텍스트 그리던 코드를 완전히 삭제하고,
+    // 음식 이름(Title)을 박스 중앙에 더 큰 폰트(예: 84px)로 꽉 차게 그림
     colorCtx.fillStyle = "#ffffff";
     colorCtx.font =
-      "900 64px -apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif";
+      "900 84px -apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif"; // 폰트 크기 확대
     colorCtx.textAlign = "center";
     colorCtx.textBaseline = "middle";
-    colorCtx.fillText(title, halfW / 2, 112);
-
-    colorCtx.fillStyle = "rgba(253, 224, 71, 0.95)";
-    colorCtx.font =
-      "700 21px -apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif";
-    colorCtx.fillText(PATTERN_LABELS[pattern], halfW / 2, 174);
+    colorCtx.fillText(title, halfW / 2, 130); // 박스 중앙(Y좌표 130)에 배치
 
     if (stats.length > 0) {
       const rowH = 56;
@@ -2272,14 +2269,11 @@ function FoodLabel({ food }: { food: Food }) {
 
   return (
     <div className="flex flex-col justify-between h-[285px] p-3.5 rounded-2xl text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.65)]">
-      {/* 상단: 음식 이름 */}
-      <div className="text-center bg-black/35 backdrop-blur-md rounded-xl py-2 px-3 border border-white/20">
-        <h2 className="text-2xl font-extrabold tracking-tight leading-tight">
+      {/* 상단: 안내 문구를 제거하고 폰트 크기를 키운 음식 이름 박스 */}
+      <div className="text-center bg-black/40 backdrop-blur-md rounded-xl py-3 px-3 border border-white/25 flex items-center justify-center">
+        <h2 className="text-3xl font-black tracking-tight leading-tight">
           {food.name}
         </h2>
-        <p className="text-[10px] text-white/80 mt-0.5 font-medium">
-          카드를 누르거나 당겨 감각을 느껴보세요
-        </p>
       </div>
 
       {/* 하단: 음식 스탯 게이지 & 뱃지 */}
