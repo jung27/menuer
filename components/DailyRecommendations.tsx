@@ -1,6 +1,7 @@
 import Link from "next/link";
 import ShareButton from "@/app/share/ShareButton";
 import Tutorial from "@/components/Tutorial";
+import DailyShareButton from "@/features/sharing/DailyShareButton";
 
 export type Meal = "breakfast" | "lunch" | "dinner";
 
@@ -84,6 +85,7 @@ export default function DailyRecommendations({
                 );
               })}
             </ul>
+            <DailyShareButton day={day} />
           </details>
         </li>
       ))}
