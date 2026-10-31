@@ -199,10 +199,11 @@ export const SENSORY_PRESETS: Record<
   },
 };
 
-const COLD_FOOD_NAMES = new Set(["냉면", "초밥", "샐러드", "김밥", "비빔국수"]);
+const FRESH_FOOD_NAMES = new Set(["샐러드", "포케", "월남쌈", "냉채"]);
+const COLD_FOOD_NAMES = new Set(["냉면", "초밥", "김밥", "비빔국수", "샌드위치", ...FRESH_FOOD_NAMES]);
 const MEAT_FOOD_NAMES = new Set(["삼겹살", "불고기", "제육볶음", "찜닭", "보쌈", "족발", "수육"]);
 const RICE_FOOD_NAMES = new Set(["비빔밥", "초밥", "김밥", "김치볶음밥", "볶음밥", "오므라이스", "카레라이스", "규동", "가츠동"]);
-const BREAD_FOOD_NAMES = new Set(["피자", "햄버거"]);
+const BREAD_FOOD_NAMES = new Set(["피자", "햄버거", "샌드위치", "토스트", "부리토"]);
 const NOODLE_FOOD_NAMES = new Set([
   "짜장면",
   "짬뽕",
@@ -211,6 +212,7 @@ const NOODLE_FOOD_NAMES = new Set([
   "냉면",
   "파스타",
   "떡볶이",
+  "떡꼬치",
   "우동",
   "칼국수",
   "멸치국수",
@@ -221,7 +223,7 @@ const NOODLE_FOOD_NAMES = new Set([
 const FRIED_FOOD_NAMES = new Set(["치킨", "돈까스", "탕수육", "꿔바로우", "군만두", "닭강정"]);
 
 export function getPatternForFood(food: Food): SurfacePatternType {
-  if (food.name === "샐러드") return "fresh";
+  if (FRESH_FOOD_NAMES.has(food.name)) return "fresh";
   if (MEAT_FOOD_NAMES.has(food.name)) return "meat";
   if (RICE_FOOD_NAMES.has(food.name)) return "rice";
   if (BREAD_FOOD_NAMES.has(food.name)) return "bread";
@@ -266,7 +268,7 @@ export function derivePhysicsFromFood(
     baseCol.set("#3b1707");
   } else if (food.name === "초밥") {
     baseCol.set("#fff7ed");
-  } else if (food.name !== "샐러드") {
+  } else if (!FRESH_FOOD_NAMES.has(food.name)) {
     baseCol.lerp(oilyCol, oily * 0.3);
     baseCol.lerp(crispyCol, crispy * 0.45);
     baseCol.lerp(soupyCol, soupy * 0.35);
