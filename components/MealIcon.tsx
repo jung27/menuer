@@ -4,7 +4,7 @@ export default function MealIcon({ meal, compact = false }: {
 }) {
   const size = compact ? 28 : 32;
   return <span aria-hidden="true" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0, width: size, height: size, fontSize: compact ? 20 : 24, lineHeight: 1 }}>
-    <svg width={compact ? 22 : 25} height={compact ? 22 : 25} viewBox="0 0 24 24" fill="none" stroke="#e6a12c" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" focusable="false">
+    <svg width={compact ? 22 : 25} height={compact ? 22 : 25} viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" focusable="false">
       {meal === "breakfast" ? <>
         <path d="M6 16a6 6 0 0 1 12 0M2 16h20M2 20h20" />
         <path d="M12 3v2M4.9 6.9l1.4 1.4M17.7 8.3l1.4-1.4M2 12h2M20 12h2" />

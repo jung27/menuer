@@ -22,6 +22,15 @@
 }
 
 @theme {
+  /* Shared UI accents: soft orange from comparison option 1. */
+  --color-accent: #f2a46d;
+  --color-accent-hover: #ed995f;
+  --color-accent-border: #edb183;
+  --color-accent-ink: #633d25;
+  --color-accent-focus: #a76539;
+  --color-accent-soft: #fff4ec;
+  --color-accent-ring: #fadbc4;
+  --color-accent-bronze: #d9a06d;
   --font-sans: "GangwonEducationModuche", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
   --text-xs: 1rem;
   --text-xs--line-height: 1.6;

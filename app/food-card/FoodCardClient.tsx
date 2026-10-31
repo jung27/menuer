@@ -122,7 +122,7 @@ function Home({ initialFoods }: { initialFoods: Food[] }) {
             </div>
             <div className="h-1.5 rounded bg-gray-200">
               <div
-                className="h-full rounded bg-orange-500"
+                className="h-full rounded bg-accent"
                 style={{ width: `${gauge[t]}%`, transition: "width 0.15s linear" }}
               />
             </div>
@@ -194,7 +194,7 @@ function Home({ initialFoods }: { initialFoods: Food[] }) {
       />
       <button
         data-tutorial="card"
-        className="rounded-xl bg-orange-500 py-3 font-semibold text-white shadow-md active:scale-[0.99]"
+        className="rounded-xl bg-accent py-3 font-semibold text-accent-ink shadow-md hover:bg-accent-hover active:scale-[0.99]"
         onClick={() => setFinished(true)}
       >
         추천 받기
@@ -361,7 +361,7 @@ function Result({ taste, saved, foods, onRestart, restartPending, restartError }
       {selectionContext && (
         <label className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-sm">
           {selectionContext.date}
-          <span className={`relative inline-flex min-h-12 min-w-24 shrink-0 items-center justify-center gap-2 rounded-lg px-3 py-2 text-base leading-relaxed focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-orange-500 ${saving || restartPending ? "opacity-50" : ""}`}>
+          <span className={`relative inline-flex min-h-12 min-w-24 shrink-0 items-center justify-center gap-2 rounded-lg px-3 py-2 text-base leading-relaxed focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent-focus ${saving || restartPending ? "opacity-50" : ""}`}>
             {/* Render the visible label outside the native select so its text cannot be clipped. */}
             <span aria-hidden="true">{{ breakfast: "아침", lunch: "점심", dinner: "저녁" }[selectionContext.meal]}</span>
             <svg aria-hidden="true" className="pointer-events-none size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
@@ -393,7 +393,7 @@ function Result({ taste, saved, foods, onRestart, restartPending, restartError }
         <>
           <p className="text-center text-red-500">{error}</p>
           <button
-            className="rounded-xl bg-orange-100 p-3"
+            className="rounded-xl bg-accent-soft p-3 text-accent-ink"
             onClick={() => {
               setError(null);
               setAttempt((value) => value + 1);
@@ -418,7 +418,7 @@ function Result({ taste, saved, foods, onRestart, restartPending, restartError }
               <li
                 key={f.menuId}
                 className={`flex flex-col gap-2 rounded-2xl bg-white p-3 shadow ${
-                  i === 0 ? "col-span-full border-2 border-orange-400 p-4" : i > 2 ? "col-span-full" : ""
+                  i === 0 ? "col-span-full border-2 border-accent-border p-4" : i > 2 ? "col-span-full" : ""
                 }`}
               >
                 <div className="relative flex items-center justify-center">
@@ -436,7 +436,7 @@ function Result({ taste, saved, foods, onRestart, restartPending, restartError }
                     data-tutorial={i === 0 ? "result" : undefined}
                     disabled={saving || restartPending || !selectionContext}
                     aria-label={`${f.name} 메뉴로 선정`}
-                    className="flex min-h-11 flex-1 items-center justify-center whitespace-nowrap rounded-xl bg-orange-500 py-2 font-bold text-white disabled:opacity-50"
+                    className="flex min-h-11 flex-1 items-center justify-center whitespace-nowrap rounded-xl bg-accent py-2 font-bold text-accent-ink hover:bg-accent-hover disabled:opacity-50"
                     onClick={() => selectMenu(f.menuId)}
                   >
                     {saving ? "저장 중..." : "선정"}
@@ -464,14 +464,14 @@ function Result({ taste, saved, foods, onRestart, restartPending, restartError }
   );
 }
 
-// 1~3위는 금·은·동 메달, 나머지는 회색 원
-const MEDAL = ["bg-yellow-400 ring-yellow-200", "bg-gray-300 ring-gray-100", "bg-amber-700 ring-amber-300"];
+// Warm medals use the same muted UI palette as the primary actions.
+const MEDAL = ["bg-accent text-accent-ink ring-accent-ring", "bg-gray-300 text-white ring-gray-100", "bg-accent-bronze text-accent-ink ring-accent-ring"];
 function Medal({ rank }: { rank: number }) {
   return (
     <span
       aria-label={`${rank}위`}
-      className={`absolute left-0 flex h-7 w-7 items-center justify-center rounded-full text-sm font-bold text-white shadow ring-2 ${
-        MEDAL[rank - 1] ?? "bg-gray-400 ring-gray-200"
+      className={`absolute left-0 flex h-7 w-7 items-center justify-center rounded-full text-sm font-bold shadow ring-2 ${
+        MEDAL[rank - 1] ?? "bg-gray-400 text-white ring-gray-200"
       }`}
     >
       {rank}
@@ -485,7 +485,7 @@ function FoodImage({ name, className, image, custom }: {
 }) {
   const [failed, setFailed] = useState(false);
   return failed || (custom && !image) ? (
-    <div className={`flex items-center justify-center rounded-xl bg-orange-50 text-5xl ${className}`} aria-hidden>
+    <div className={`flex items-center justify-center rounded-xl bg-accent-soft text-5xl ${className}`} aria-hidden>
       🍽️
     </div>
   ) : (

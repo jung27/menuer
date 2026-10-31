@@ -837,7 +837,7 @@ const STAT_HEX_COLORS: Record<string, string> = {
   매운맛: "#ef4444",
   기름짐: "#eab308",
   국물: "#0ea5e9",
-  바삭함: "#f97316",
+  바삭함: "#f2a46d", // UI accent; food surface colors remain independent.
 };
 
 const PATTERN_LABELS: Record<SurfacePatternType, string> = {
@@ -1276,12 +1276,12 @@ function createCardAtlasTextures(
         const pct = Math.round(val * 100);
         const ry = panelY + 26 + idx * rowH;
 
-        const badgeColor = STAT_HEX_COLORS[label] ?? "#f97316";
+        const badgeColor = STAT_HEX_COLORS[label] ?? "#f2a46d";
         drawRoundRect(colorCtx, 52, ry, 96, 38, 12);
         colorCtx.fillStyle = badgeColor;
         colorCtx.fill();
 
-        colorCtx.fillStyle = "#ffffff";
+        colorCtx.fillStyle = badgeColor === "#f2a46d" ? "#633d25" : "#ffffff";
         colorCtx.font =
           "800 21px -apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif";
         colorCtx.textAlign = "center";
@@ -2974,7 +2974,7 @@ function FoodLabel({ food }: { food: Food }) {
             return (
               <div key={tag} className="flex items-center gap-1.5 text-[13px]">
                 <span
-                  className={`px-1.5 py-0.5 rounded font-bold text-xs shrink-0 ${STAT_HEX_COLORS[tag]}`}
+                  className={`px-1.5 py-0.5 rounded font-bold text-xs shrink-0 ${tag === "바삭함" ? "bg-accent text-accent-ink" : STAT_HEX_COLORS[tag]}`}
                 >
                   {tag}
                 </span>

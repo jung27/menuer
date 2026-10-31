@@ -12,7 +12,7 @@
 html { scrollbar-gutter: stable; scroll-padding-top: calc(var(--site-header-height) + 16px); }
 body { font-family: var(--site-font); word-break: keep-all; overflow-wrap: anywhere; }
 button, select { word-break: keep-all; overflow-wrap: normal; }
-.site-header { position: sticky; top: 0; z-index: 40; flex-shrink: 0; width: 100%; border-bottom: 1px solid #e6e6e6; background: #fff4ec; color: #292929; }
+.site-header { position: sticky; top: 0; z-index: 40; flex-shrink: 0; width: 100%; border-bottom: 1px solid #e6e6e6; background: var(--color-accent-soft); color: #292929; }
 .site-header-inner { display: flex; align-items: center; justify-content: space-between; gap: 24px; width: 100%; max-width: var(--site-width); min-height: var(--site-header-height); margin-inline: auto; padding-inline: var(--site-gutter); }
 .site-brand { display: inline-flex; align-items: center; gap: 10px; color: inherit; text-decoration: none; font-size: 25px; font-weight: 700; letter-spacing: -.8px; line-height: 1; white-space: nowrap; }
 .site-brand-mark { display: grid; place-items: center; flex-shrink: 0; width: 40px; height: 40px; }
