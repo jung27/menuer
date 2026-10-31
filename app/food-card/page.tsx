@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { FOODS } from "./foods";
 import {
   TAGS,
@@ -12,21 +12,18 @@ import {
   type Taste,
 } from "./taste";
 import "./gauge.css";
-import SensoryObject from "@/components/SensoryObject";
-
-const SHAKE_ACCEL = 10;
-const SHAKE_HOLD_MS = 300;
-const TICK_MS = 100;
+import SensoryObject, {
+  VISIBLE_SENSORY_TAGS,
+} from "@/components/SensoryObject";
 
 export default function Home() {
   const [index, setIndex] = useState(0);
   const [taste, setTaste] = useState(emptyTaste);
   const [cardDamage, setCardDamage] = useState(0);
+  const [showInfo, setShowInfo] = useState(true);
   const [pos, setPos] = useState({ x: 0, y: 0 });
   const [finished, setFinished] = useState(false);
-  const [shakeOn, setShakeOn] = useState(false);
   const leaving = useRef(false);
-  const shakingUntil = useRef(0);
 
   const food: Food | undefined = FOODS[index];
   const done = finished || !food;
@@ -36,42 +33,7 @@ export default function Home() {
     setTaste((t) => applyInteraction(t, food, w));
   };
 
-  // 모바일 흔들기(DeviceMotion) 시 현재 음식 스탯 반영 및 카드 데미지 증가
-  useEffect(() => {
-    if (!food) return;
-    const id = setInterval(() => {
-      const now = Date.now();
-      const rate = now < shakingUntil.current ? WEIGHTS.shakePerSec : 0;
-      if (!rate) return;
-      setTaste((t) => applyInteraction(t, food, (rate * TICK_MS) / 1000));
-      setCardDamage((prev) => Math.min(100, prev + 4));
-    }, TICK_MS);
-    return () => clearInterval(id);
-  }, [food]);
-
-  useEffect(() => {
-    if (!shakeOn) return;
-    const onMotion = (e: DeviceMotionEvent) => {
-      const a = e.acceleration;
-      if (a && Math.hypot(a.x ?? 0, a.y ?? 0, a.z ?? 0) > SHAKE_ACCEL) {
-        shakingUntil.current = Date.now() + SHAKE_HOLD_MS;
-      }
-    };
-    window.addEventListener("devicemotion", onMotion);
-    return () => window.removeEventListener("devicemotion", onMotion);
-  }, [shakeOn]);
-
-  async function enableShake() {
-    if (typeof DeviceMotionEvent === "undefined") return;
-    const DM = DeviceMotionEvent as unknown as {
-      requestPermission?: () => Promise<string>;
-    };
-    if (DM.requestPermission && (await DM.requestPermission()) !== "granted")
-      return;
-    setShakeOn(true);
-  }
-
-  // 왼쪽(-1)은 이전 카드, 오른쪽(+1)은 다음 카드로 이동하도록 버그 수정
+  // 왼쪽(-1)은 이전 카드, 오른쪽(+1)은 다음 카드로 이동
   function skip(dir: number) {
     if (!food || leaving.current) return;
     if (dir < 0 && index <= 0) return;
@@ -79,7 +41,6 @@ export default function Home() {
     setPos({ x: dir * 600, y: 0 });
     setTimeout(() => {
       leaving.current = false;
-      shakingUntil.current = 0;
       setPos({ x: 0, y: 0 });
       setCardDamage(0);
       setIndex((i) => Math.max(0, i + dir));
@@ -99,8 +60,9 @@ export default function Home() {
 
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-3 p-4">
+      {/* 외부로 드러나는 4대 물리 감각 특성(매운맛·바삭함·국물·기름짐)만 표시 */}
       <ul className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-        {TAGS.map((t) => (
+        {VISIBLE_SENSORY_TAGS.map((t) => (
           <li
             key={t}
             className="gauge"
@@ -118,9 +80,18 @@ export default function Home() {
         ))}
       </ul>
 
-      <p className="text-center text-sm text-gray-500">
-        카드 {index + 1} / {FOODS.length}
-      </p>
+      <div className="flex items-center justify-between px-1">
+        <p className="text-sm text-gray-500">
+          카드 {index + 1} / {FOODS.length}
+        </p>
+        <button
+          type="button"
+          className="rounded-full border border-gray-300 bg-white px-3 py-1 text-xs font-semibold text-gray-700 shadow-sm active:scale-95"
+          onClick={() => setShowInfo((prev) => !prev)}
+        >
+          {showInfo ? "음식 정보 끄기" : "음식 정보 켜기"}
+        </button>
+      </div>
 
       <div className="flex flex-1 items-center justify-center gap-2">
         <SkipButton
@@ -131,7 +102,7 @@ export default function Home() {
           ‹
         </SkipButton>
 
-        {/* 감각 오브제 자체가 3차원 카드로 동작 (배경 박스 없이 3D 카드 직육면체 렌더링) */}
+        {/* 감각 오브제 자체가 3차원 카드로 동작 */}
         <div
           className="relative z-10 flex aspect-[3/4] min-w-0 max-w-xs flex-1 select-none items-center justify-center overflow-visible"
           style={{
@@ -142,11 +113,11 @@ export default function Home() {
           <div className="w-full h-full">
             <SensoryObject
               food={food}
+              showInfo={showInfo}
               value={cardDamage}
               onChange={(newVal) => {
                 const delta = Math.max(1, newVal - cardDamage);
                 setCardDamage(newVal);
-                // 카드를 만지거나 당긴 정도에 비례해 해당 음식의 감각 스탯 흡수
                 bump(delta >= 10 ? WEIGHTS.tap : WEIGHTS.holdPerSec * 0.2);
               }}
             />
@@ -164,14 +135,6 @@ export default function Home() {
       >
         추천 받기
       </button>
-      {!shakeOn && (
-        <button
-          className="text-sm text-gray-500 underline"
-          onClick={enableShake}
-        >
-          흔들기 켜기
-        </button>
-      )}
     </main>
   );
 }
@@ -217,39 +180,37 @@ function Result({ taste, onRestart }: { taste: Taste; onRestart: () => void }) {
     Object.fromEntries(TAGS.map((tag) => [API_KEYS[tag], taste[tag]])),
   );
 
-  useEffect(() => {
-    let active = true;
-    if (!pending.current || pending.current.attempt !== attempt) {
-      requestId.current ??= crypto.randomUUID();
-      const promise = fetch("/api/recommendations", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          requestId: requestId.current,
-          tasteScores: JSON.parse(body),
-        }),
-      }).then(async (response) => {
-        const data = await response.json();
-        if (!response.ok)
-          throw new Error(data.error?.message ?? "추천을 불러오지 못했어요.");
-        return data.recommendations as Ranked[];
-      });
-      pending.current = { attempt, promise };
-    }
-    pending.current.promise
-      .then((recommendations) => {
-        if (active) setRanking(recommendations);
-      })
-      .catch((err) => {
-        if (active)
-          setError(
-            err instanceof Error ? err.message : "추천을 불러오지 못했어요.",
-          );
-      });
-    return () => {
-      active = false;
-    };
-  }, [body, attempt]);
+  useState(() => {
+    // 초기 렌더 시점 준비
+  });
+
+  // 추천 API 호출
+  const fetchRef = useRef(false);
+  if (!fetchRef.current || pending.current?.attempt !== attempt) {
+    fetchRef.current = true;
+    requestId.current ??= crypto.randomUUID();
+    const promise = fetch("/api/recommendations", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        requestId: requestId.current,
+        tasteScores: JSON.parse(body),
+      }),
+    }).then(async (response) => {
+      const data = await response.json();
+      if (!response.ok)
+        throw new Error(data.error?.message ?? "추천을 불러오지 못했어요.");
+      return data.recommendations as Ranked[];
+    });
+    pending.current = { attempt, promise };
+    promise
+      .then((recommendations) => setRanking(recommendations))
+      .catch((err) =>
+        setError(
+          err instanceof Error ? err.message : "추천을 불러오지 못했어요.",
+        ),
+      );
+  }
 
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 p-4">
