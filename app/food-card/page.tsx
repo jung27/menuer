@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { AuthError, requireUser } from "@/lib/auth";
 import FoodCardClient from "./FoodCardClient";
+import { reportFailure } from "@/lib/server-failure";
 
 export default function FoodCardPage(props: PageProps<"/food-card">) {
   return <Suspense fallback={<p className="p-8 text-center">로그인 확인 중...</p>}>
@@ -25,7 +26,8 @@ async function AuthenticatedFoodCard({ searchParams }: PageProps<"/food-card">) 
     if (error instanceof AuthError && error.status === 401) {
       redirect(`/login?next=${encodeURIComponent(destination)}`);
     }
-    return <p role="alert" className="p-8 text-center">로그인 상태를 확인하지 못했어요. 잠시 후 새로고침해주세요.</p>;
+    const failure = reportFailure(error, "food-card");
+    return <p role="alert" className="p-8 text-center">{failure.error.message}</p>;
   }
   return <FoodCardClient />;
 }

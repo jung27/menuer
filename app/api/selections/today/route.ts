@@ -11,5 +11,5 @@ export async function GET() {
       date: today, closesAt: result.closesAt,
       meals: result.days[0]?.meals ?? { breakfast: null, lunch: null, dinner: null },
     });
-  } catch (error) { return authFailure(error); }
+  } catch (error) { return authFailure(error, "today"); }
 }

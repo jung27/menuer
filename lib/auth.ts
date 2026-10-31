@@ -2,6 +2,7 @@ import "server-only";
 import { createHash, randomBytes, randomUUID, scrypt, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import { getDatabase } from "@/lib/mongodb";
+import { failureResponse, type Operation } from "./server-failure";
 
 type User = { _id: string; email: string; nickname: string; passwordHash: string; createdAt: Date };
 type Session = { _id: string; userId: string; expiresAt: Date };
@@ -16,9 +17,9 @@ export class AuthError extends Error {
 export function authResponse(value: unknown, status = 200) {
   return Response.json(value, { status, headers: { "Cache-Control": "private, no-store" } });
 }
-export function authFailure(error: unknown) {
+export function authFailure(error: unknown, operation: Operation = "auth") {
   if (error instanceof AuthError) return authResponse({ error: { code: error.code, message: error.message } }, error.status);
-  return authResponse({ error: { code: "SERVICE_UNAVAILABLE", message: "잠시 후 다시 시도해주세요." } }, 503);
+  return failureResponse(error, operation);
 }
 export function assertSameOrigin(request: Request) {
   const origin = request.headers.get("origin");

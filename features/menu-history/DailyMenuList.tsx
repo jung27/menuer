@@ -1,4 +1,5 @@
 "use client";
+import { readApiResponse } from "@/lib/read-api-response";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import DailyRecommendations, { type DailyMenus, type Meal } from "@/components/DailyRecommendations";
@@ -23,7 +24,7 @@ export default function DailyMenuList({ recommendationHref = "/food-card" }: { r
           if (active && current === generation) { setData(null); setLoginRequired(true); setError(""); }
           return;
         }
-        const today = await todayResponse.json();
+        const today = await readApiResponse(todayResponse);
         if (!todayResponse.ok) throw new Error(today.error?.message ?? "기록을 불러오지 못했어요.");
         const from = new Date(new Date(`${today.date}T00:00:00Z`).getTime() - 365 * 86400000).toISOString().slice(0, 10);
         const historyResponse = await fetch(`/api/selections?from=${from}&to=${today.date}`, { cache: "no-store", signal: controller.signal });
@@ -31,7 +32,7 @@ export default function DailyMenuList({ recommendationHref = "/food-card" }: { r
           if (active && current === generation) { setData(null); setLoginRequired(true); }
           return;
         }
-        const history = await historyResponse.json();
+        const history = await readApiResponse(historyResponse);
         if (!historyResponse.ok) throw new Error(history.error?.message ?? "기록을 불러오지 못했어요.");
         const past = (history.days as ApiDay[]).filter(day => Object.values(day.meals).some(Boolean)).map(toDay);
         if (active && current === generation) {

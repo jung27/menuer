@@ -1,9 +1,10 @@
 import { authFailure, requireUser } from "@/lib/auth";
 import { publicRecord, recordsCollection } from "@/lib/records";
+import { failureResponse } from "@/lib/server-failure";
 
 export async function GET(request: Request) {
   let user;
-  try { user = await requireUser(); } catch (error) { return authFailure(error); }
+  try { user = await requireUser(); } catch (error) { return authFailure(error, "records"); }
   const params = new URL(request.url).searchParams;
   const date = params.get("date") ?? "";
   const parsed = new Date(`${date}T00:00:00.000Z`);
@@ -21,7 +22,7 @@ export async function GET(request: Request) {
     return Response.json({ date, records: records.slice(0, 100).map(publicRecord),
       nextOffset: records.length > 100 ? offset + 100 : null,
     }, { headers: { "Cache-Control": "private, no-store" } });
-  } catch {
-    return Response.json({ error: { code: "DATABASE_UNAVAILABLE", message: "기록을 불러오지 못했어요. 잠시 후 다시 시도해주세요." } }, { status: 503 });
+  } catch (error) {
+    return failureResponse(error, "records");
   }
 }
