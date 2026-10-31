@@ -1,10 +1,12 @@
-export type SensorySound = "broth" | "squish" | "stretch" | "crunch" | "fresh";
+export type SensorySound = "broth" | "squish" | "stretch" | "crunch" | "fresh" | "bread";
 const files: Record<SensorySound, string> = {
   broth: "/sounds/broth-touch.wav", squish: "/sounds/squish-touch.wav",
   stretch: "/sounds/stretch-touch.wav", crunch: "/sounds/crunch-touch.wav", fresh: "/sounds/fresh-touch.wav",
+  bread: "/sounds/bread-touch.wav",
 };
 const volumes: Record<SensorySound, number> = {
   broth: 0.32, squish: 0.3, stretch: 0.28, crunch: 0.35, fresh: 0.35,
+  bread: 0.26,
 };
 let context: AudioContext | undefined;
 const downloads = new Map<SensorySound, Promise<ArrayBuffer>>();
@@ -36,7 +38,8 @@ export function soundForGesture(pattern: string, dragging: boolean): SensorySoun
   if (pattern === "broth") return "broth";
   if (pattern === "fresh") return "fresh";
   if (pattern === "fried") return "crunch";
-  if (dragging && (pattern === "noodle" || pattern === "bread" || pattern === "tteok")) return "stretch";
+  if (pattern === "bread") return "bread";
+  if (dragging && (pattern === "noodle" || pattern === "tteok")) return "stretch";
   return "squish";
 }
 
@@ -79,7 +82,7 @@ export class SensoryAudio {
         const source = ctx.createBufferSource();
         const gain = ctx.createGain();
         source.buffer = audio;
-        source.loop = kind !== "crunch" && kind !== "fresh";
+        source.loop = kind !== "crunch" && kind !== "fresh" && kind !== "bread";
         gain.gain.setValueAtTime(0, ctx.currentTime);
         gain.gain.linearRampToValueAtTime(volumes[kind], ctx.currentTime + 0.002);
         source.connect(gain);

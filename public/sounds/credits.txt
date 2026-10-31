@@ -6,3 +6,4 @@ broth-touch.wav | CC0 | https://freesound.org/people/kijjaz/sounds/16740/ | 편�
 crunch-touch.wav | CC0 | https://freesound.org/people/cognito%20perceptu/sounds/723851/ | 편집: 앞 무음 및 약한 도입부 제거, 발췌, 음량 조절, 짧은 페이드, 24kHz 모노 WAV 변환
 fresh-touch.wav | CC0 | https://freesound.org/people/lunchmoney/sounds/382042/ | 편집: 앞 무음 및 약한 도입부 제거, 발췌, 음량 조절, 짧은 페이드, 24kHz 모노 WAV 변환
 stretch-touch.wav | Stretchy Wet Slime Squish by BudgetPixel AI | CC BY 4.0 | https://budgetpixel.com/sfx/stretchy-wet-slime-squish-681156c9 | https://creativecommons.org/licenses/by/4.0/ | AI 생성 음원, 편집: 앞 무음 및 약한 도입부 제거, 발췌, 음량 조절, 짧은 페이드, 24kHz 모노 WAV 변환
+bread-touch.wav | CC0 | https://freesound.org/people/cognito%20perceptu/sounds/723851/ | 편집: 기존 바삭 음원에서 0.28초 발췌, 3.2kHz 저역통과 필터 2회, 음량 감소, 시작·끝 페이드, 24kHz 모노 WAV
