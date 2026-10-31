@@ -8,52 +8,6 @@ export type MenuHistoryRecord = {
   imageUrl?: string;
 };
 
-// Replace these preview records with the backend's selected-menu history.
-export const previewMenuHistory: readonly MenuHistoryRecord[] = [
-  {
-    id: "preview-1",
-    name: "마라탕",
-    chosenAt: "2026-10-31T12:30:00+09:00",
-    senses: ["매움 72%", "뜨거움 65%"],
-  },
-  {
-    id: "preview-2",
-    name: "치킨 샐러드",
-    chosenAt: "2026-10-30T18:20:00+09:00",
-    senses: ["바삭함 60%", "든든함 45%"],
-  },
-  {
-    id: "preview-3",
-    name: "떡볶이",
-    chosenAt: "2026-10-30T12:10:00+09:00",
-    senses: ["매움 80%", "달달함 45%"],
-  },
-  {
-    id: "preview-4",
-    name: "등심 돈카츠",
-    chosenAt: "2026-10-29T13:15:00+09:00",
-    senses: ["바삭함 85%", "든든함 70%"],
-  },
-  {
-    id: "preview-5",
-    name: "크림 파스타",
-    chosenAt: "2026-10-28T18:40:00+09:00",
-    senses: ["미끄러움 65%", "든든함 60%"],
-  },
-  {
-    id: "preview-6",
-    name: "김치찌개",
-    chosenAt: "2026-10-27T12:00:00+09:00",
-    senses: ["뜨거움 85%", "매움 55%"],
-  },
-  {
-    id: "preview-7",
-    name: "수제 버거",
-    chosenAt: "2026-10-26T12:45:00+09:00",
-    senses: ["든든함 80%", "바삭함 50%"],
-  },
-];
-
 export function sortMenuHistory(records: readonly MenuHistoryRecord[]) {
   return [...records].sort(
     (a, b) => Date.parse(b.chosenAt) - Date.parse(a.chosenAt),

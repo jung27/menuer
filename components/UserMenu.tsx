@@ -28,6 +28,7 @@ export default function UserMenu() {
     setPending(false);
     if (!res?.ok) return;
     setUser(null);
+    window.dispatchEvent(new Event("menuer-auth-change"));
     router.refresh();
   }
 
