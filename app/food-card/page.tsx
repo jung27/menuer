@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { FOODS } from "./foods";
 import {
   TAGS,
@@ -206,13 +207,18 @@ const API_KEYS = {
 } as const;
 
 function Result({ taste, onRestart }: { taste: Taste; onRestart: () => void }) {
+  const router = useRouter();
+  const [selectionContext, setSelectionContext] = useState<{ recordId: string; date: string; meal: string } | null>(null);
+  const [saving, setSaving] = useState(false);
+  const saveLock = useRef(false);
+  const [saveError, setSaveError] = useState("");
   const [ranking, setRanking] = useState<Ranked[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
   const requestId = useRef<string | null>(null);
   const pending = useRef<{
     attempt: number;
-    promise: Promise<Ranked[]>;
+    promise: Promise<{ recommendations: Ranked[]; recordId: string; date: string; meal: string }>;
   } | null>(null);
   const body = JSON.stringify(
     Object.fromEntries(TAGS.map((tag) => [API_KEYS[tag], taste[tag]])),
@@ -233,13 +239,23 @@ function Result({ taste, onRestart }: { taste: Taste; onRestart: () => void }) {
         const data = await response.json();
         if (!response.ok)
           throw new Error(data.error?.message ?? "추천을 불러오지 못했어요.");
-        return data.recommendations as Ranked[];
+        const todayResponse = await fetch("/api/selections/today", { cache: "no-store" });
+        const today = await todayResponse.json();
+        if (!todayResponse.ok) throw new Error(today.error?.message ?? "오늘 날짜를 불러오지 못했어요.");
+        const params = new URLSearchParams(window.location.search);
+        const meal = params.get("meal") ?? "lunch";
+        return { recommendations: data.recommendations as Ranked[], recordId: data.recordId as string,
+          date: params.get("date") ?? today.date as string,
+          meal: ["breakfast", "lunch", "dinner"].includes(meal) ? meal : "lunch" };
       });
       pending.current = { attempt, promise };
     }
     pending.current.promise
-      .then((recommendations) => {
-        if (active) setRanking(recommendations);
+      .then((result) => {
+        if (active) {
+          setRanking(result.recommendations);
+          setSelectionContext({ recordId: result.recordId, date: result.date, meal: result.meal });
+        }
       })
       .catch((err) => {
         if (active)
@@ -252,9 +268,33 @@ function Result({ taste, onRestart }: { taste: Taste; onRestart: () => void }) {
     };
   }, [body, attempt]);
 
+  async function selectMenu(menuId: string) {
+    if (!selectionContext || saveLock.current) return;
+    saveLock.current = true; setSaving(true); setSaveError("");
+    try {
+      const response = await fetch("/api/selections", {
+        method: "PUT", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...selectionContext, menuId }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error?.message ?? "선정 메뉴를 저장하지 못했어요.");
+      router.push("/"); router.refresh();
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : "저장에 실패했어요.");
+    } finally { saveLock.current = false; setSaving(false); }
+  }
+
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 p-4">
       <h1 className="text-center text-xl font-bold">오늘의 추천 메뉴</h1>
+      {selectionContext && <label className="flex items-center justify-center gap-3 text-sm">
+        {selectionContext.date}
+        <select aria-label="선정할 끼니" disabled={saving} value={selectionContext.meal}
+          onChange={event => setSelectionContext({ ...selectionContext, meal: event.target.value })}>
+          <option value="breakfast">아침</option><option value="lunch">점심</option><option value="dinner">저녁</option>
+        </select>
+      </label>}
+      {saveError && <p role="alert" className="text-center text-red-500">{saveError}</p>}
       {error && (
         <>
           <p className="text-center text-red-500">{error}</p>
@@ -280,10 +320,12 @@ function Result({ taste, onRestart }: { taste: Taste; onRestart: () => void }) {
             <p className="text-sm">
               유사도 점수 {Math.round(ranking[0].score)} / 100
             </p>
-            <p className="mt-2 text-sm">기록에 저장했어요.</p>
+            <button disabled={saving || !selectionContext} className="mt-4 rounded-xl bg-white px-5 py-2 font-bold text-orange-600 disabled:opacity-50" onClick={() => selectMenu(ranking[0].menuId)}>
+              {saving ? "저장 중..." : "메뉴로 선정"}
+            </button>
             <ShareButton
               menu={ranking[0].name}
-              className="mt-4 rounded-full bg-white/20 px-4 py-1.5 text-sm font-medium"
+              className="ml-2 mt-4 rounded-xl bg-white/20 px-5 py-2 font-medium"
             />
           </div>
           <ol className="flex flex-col gap-2">
@@ -295,11 +337,12 @@ function Result({ taste, onRestart }: { taste: Taste; onRestart: () => void }) {
                 <span>
                   {i + 2}위 {f.name}
                 </span>
-                <span className="flex items-center gap-3 text-gray-500">
-                  {Math.round(f.score)}점
+                <span className="flex items-center gap-2">
+                  <span className="text-gray-500">{Math.round(f.score)}점</span>
+                  <button disabled={saving || !selectionContext} aria-label={`${f.name} 메뉴로 선정`} className="rounded-lg bg-orange-100 px-3 py-1 text-orange-800 disabled:opacity-50" onClick={() => selectMenu(f.menuId)}>선정</button>
                   <ShareButton
                     menu={f.name}
-                    className="rounded-full border border-gray-300 px-3 py-1 text-xs"
+                    className="rounded-lg border border-gray-300 px-3 py-1 text-gray-600"
                   />
                 </span>
               </li>
@@ -307,7 +350,7 @@ function Result({ taste, onRestart }: { taste: Taste; onRestart: () => void }) {
           </ol>
         </>
       )}
-      <button className="rounded-xl bg-gray-200 py-3" onClick={onRestart}>
+      <button disabled={saving} className="rounded-xl bg-gray-200 py-3 disabled:opacity-50" onClick={onRestart}>
         다시 하기
       </button>
     </main>

@@ -16,20 +16,15 @@ const MEALS: { key: Meal; label: string; icon: string }[] = [
 
 /**
  * 날짜별 아침·점심·저녁 추천 목록. 맨 위 날짜만 펼친 채로 시작하고, 날짜를 누르면 접고 펼침.
- *
- * 사용 예:
- * <DailyRecommendations
- *   days={[
- *     { date: "2026-10-31", meals: { breakfast: "짜장면" } },
- *     { date: "2026-10-30", meals: {} },
- *   ]}
- * />
+ * editableDate에 해당하는 오늘 메뉴만 재선정 링크를 표시합니다.
  */
 export default function DailyRecommendations({
   days,
+  editableDate,
   recommendHref = (date, meal) => `/food-card?date=${date}&meal=${meal}`,
 }: {
   days: DailyMenus[];
+  editableDate?: string;
   recommendHref?: (date: string, meal: Meal) => string; // "추천" 버튼을 눌렀을 때 갈 주소
 }) {
   return (
@@ -58,7 +53,9 @@ export default function DailyRecommendations({
                       </span>
                       {label}
                     </span>
-                    <Link
+                    {day.date !== editableDate ? (
+                      <div className="flex-1 rounded-xl border border-neutral-200 px-4 py-3 text-neutral-700">{menu ?? "미선정"}</div>
+                    ) : <Link
                       href={recommendHref(day.date, key)}
                       aria-label={menu ? `${label} ${menu}, 다시 추천받기` : `${label} 메뉴 추천받기`}
                       className={`flex flex-1 items-center gap-2 rounded-xl border px-4 py-3 transition-colors ${
@@ -71,7 +68,8 @@ export default function DailyRecommendations({
                         {menu ? "↻" : "+"}
                       </span>
                       {menu ?? "추천"}
-                    </Link>
+                      {menu && <span className="ml-auto text-xs text-neutral-500">다시 고르기</span>}
+                    </Link>}
                     {menu && (
                       <ShareButton
                         menu={menu}

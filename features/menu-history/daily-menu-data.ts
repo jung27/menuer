@@ -1,14 +1,5 @@
 import type { DailyMenus } from "@/components/DailyRecommendations";
 
-// UI preview data. Replace with records carrying an explicit meal type when
-// the records API supports breakfast/lunch/dinner; do not infer it from time.
-export const previewDailyMenus: DailyMenus[] = [
-  { date: "2026-10-31", meals: { breakfast: "짜장면" } },
-  { date: "2026-10-30", meals: { breakfast: "토스트", lunch: "돈가스", dinner: "마라탕" } },
-  { date: "2026-10-29", meals: { lunch: "크림 파스타", dinner: "비빔밥" } },
-  { date: "2026-10-28", meals: { breakfast: "샌드위치", lunch: "우동" } },
-];
-
 export function koreaCalendarDate(date: Date): string {
   const parts = new Intl.DateTimeFormat("en", {
     timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit",

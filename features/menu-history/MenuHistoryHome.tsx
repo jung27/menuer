@@ -1,12 +1,9 @@
 import Link from "next/link";
-import type { DailyMenus } from "@/components/DailyRecommendations";
 import UserMenu from "@/components/UserMenu";
 import DailyMenuList from "./DailyMenuList";
-import { previewDailyMenus } from "./daily-menu-data";
 import "./MenuHistoryHome.css";
 
 type MenuHistoryHomeProps = {
-  days?: readonly DailyMenus[];
   /** Change this when the team's recommendation route is ready. */
   recommendationHref?: string;
 };
@@ -21,7 +18,6 @@ export function MenuHistoryBrand() {
 }
 
 export default function MenuHistoryHome({
-  days = previewDailyMenus,
   recommendationHref = "/food-card",
 }: MenuHistoryHomeProps) {
   return (
@@ -35,7 +31,7 @@ export default function MenuHistoryHome({
 
       <main id="menu-history-content" className="mh-main">
         <h1 id="menu-history-title" className="mh-daily-title">식사 기록</h1>
-        <DailyMenuList days={days} recommendationHref={recommendationHref} />
+        <DailyMenuList recommendationHref={recommendationHref} />
       </main>
     </div>
   );
