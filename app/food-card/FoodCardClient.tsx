@@ -361,10 +361,13 @@ function Result({ taste, saved, foods, onRestart, restartPending, restartError }
       {selectionContext && (
         <label className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-sm">
           {selectionContext.date}
-          <span className="relative inline-flex shrink-0 items-center">
+          <span className={`relative inline-flex min-h-12 min-w-24 shrink-0 items-center justify-center gap-2 rounded-lg px-3 py-2 text-base leading-relaxed focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-orange-500 ${saving || restartPending ? "opacity-50" : ""}`}>
+            {/* Render the visible label outside the native select so its text cannot be clipped. */}
+            <span aria-hidden="true">{{ breakfast: "아침", lunch: "점심", dinner: "저녁" }[selectionContext.meal]}</span>
+            <svg aria-hidden="true" className="pointer-events-none size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
             <select
               aria-label="선정할 끼니"
-              className="min-h-11 min-w-20 cursor-pointer appearance-none rounded-lg bg-transparent py-2 pl-3 pr-8 text-base leading-relaxed focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500 disabled:cursor-default disabled:opacity-50"
+              className="absolute inset-0 h-full w-full cursor-pointer opacity-0 disabled:cursor-default"
               disabled={saving || restartPending}
               value={selectionContext.meal}
               onChange={(event) =>
@@ -378,7 +381,6 @@ function Result({ taste, saved, foods, onRestart, restartPending, restartError }
               <option value="lunch">점심</option>
               <option value="dinner">저녁</option>
             </select>
-            <svg aria-hidden="true" className="pointer-events-none absolute right-2 size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
           </span>
         </label>
       )}
