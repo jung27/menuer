@@ -1,12 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-export type CurrentUser = { id: string; email: string; nickname: string };
+export type CurrentUser = { id: string; email: string; nickname: string; avatar: string | null };
 export function useCurrentUser() {
   const [user, setUser] = useState<CurrentUser | null | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
   const retry = useCallback(() => { setError(null); setAttempt(value => value + 1); }, []);
+  // 프로필 사진 변경 등 계정 정보가 바뀌면 다시 불러옴
   useEffect(() => {
     window.addEventListener("menuer-auth-change", retry);
     return () => window.removeEventListener("menuer-auth-change", retry);

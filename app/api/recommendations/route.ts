@@ -52,7 +52,7 @@ export async function POST(request: Request) {
 
   const totalInteractionMs = times.reduce((total, [, time]) => total + time, 0);
   if (!Number.isFinite(totalInteractionMs) || totalInteractionMs <= 0) {
-    return badRequest("카드에 한 번 이상 상호작용해주세요. 입력 합계는 0보다 커야 합니다.");
+    return badRequest("카드에 한 번 이상 상호작용해주세요.");
   }
 
   // 모든 항목의 누적 시간 합계를 분모로 사용합니다. 반올림은 화면에서 합니다.

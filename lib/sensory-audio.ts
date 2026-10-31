@@ -29,9 +29,11 @@ function decode(kind: SensorySound, ctx: AudioContext) {
   return buffer;
 }
 
-export async function prepareSensoryAudio() {
+export async function prepareSensoryAudio(pattern?: string) {
   const ctx = audioContext();
-  await Promise.all((Object.keys(files) as SensorySound[]).map(kind => decode(kind, ctx)));
+  const kinds = pattern === undefined ? Object.keys(files) as SensorySound[]
+    : [...new Set([soundForGesture(pattern, false), soundForGesture(pattern, true)])];
+  await Promise.all(kinds.map(kind => decode(kind, ctx)));
 }
 
 export function soundForGesture(pattern: string, dragging: boolean): SensorySound {

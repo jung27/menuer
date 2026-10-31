@@ -24,7 +24,27 @@ const SHAKE_ACCEL = 10;
 const SHAKE_HOLD_MS = 300;
 const TICK_MS = 100;
 
-export default function Home({ initialFoods }: { initialFoods: Food[] }) {
+type Saved = { recordId: string; recommendations: Ranked[] };
+
+// "다시 고르기"로 들어오면(오늘 이미 고른 끼니) 그때 받은 추천 결과를 다시 보여 줌
+async function loadSaved(): Promise<Saved | null> {
+  const meal = new URLSearchParams(window.location.search).get("meal");
+  if (!meal) return null;
+  const today = await fetch("/api/selections/today", { cache: "no-store" }).then(readApiResponse);
+  const recordId = today.meals?.[meal]?.recordId;
+  if (!recordId) return null;
+  const { records } = await fetch(`/api/records?date=${today.date}`, { cache: "no-store" }).then(readApiResponse);
+  return (records as Saved[] | undefined)?.find((r) => r.recordId === recordId) ?? null;
+}
+
+// Next.js가 다른 페이지로 갔다 와도 화면 상태를 그대로 보존해서(cacheComponents),
+// 링크로 새로 들어올 때마다 카드부터 다시 시작하도록 bfcacheId로 초기화. 뒤로 가기에서는 그대로 유지됨.
+export default function FoodCard(props: { initialFoods: Food[] }) {
+  const { bfcacheId } = useRouter();
+  return <Home key={bfcacheId} {...props} />;
+}
+
+function Home({ initialFoods }: { initialFoods: Food[] }) {
   const [foods, setFoods] = useState(initialFoods);
   const [index, setIndex] = useState(0);
   const [taste, setTaste] = useState(emptyTaste);
@@ -32,7 +52,12 @@ export default function Home({ initialFoods }: { initialFoods: Food[] }) {
   const [showInfo, setShowInfo] = useState(true);
   const [pos, setPos] = useState({ x: 0, y: 0 });
   const [finished, setFinished] = useState(false);
+  const [saved, setSaved] = useState<Saved | null | undefined>(undefined); // undefined = 확인 중
   const leaving = useRef(false);
+
+  useEffect(() => {
+    loadSaved().then(setSaved, () => setSaved(null));
+  }, []);
 
   const food: Food | undefined = foods[index];
   const done = finished || !food;
@@ -64,12 +89,15 @@ export default function Home({ initialFoods }: { initialFoods: Food[] }) {
     setFinished(false);
   }
 
+  if (saved === undefined) return <p className="p-8 text-center text-gray-500">불러오는 중...</p>;
+  if (saved)
+    return <Result taste={taste} saved={saved} onRestart={() => { setSaved(null); restart(); }} />;
   if (done) return <Result taste={taste} onRestart={restart} />;
 
   const gauge = toGauge(taste);
 
   return (
-    <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-3 p-4">
+    <main className="mx-auto flex w-full min-w-0 max-w-2xl flex-1 flex-col gap-3 overflow-x-clip p-4">
       {/* 외부로 드러나는 4대 물리 감각 특성(매운맛·바삭함·국물·기름짐)만 표시 */}
       <ul className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
         {VISIBLE_SENSORY_TAGS.map((t) => (
@@ -102,7 +130,8 @@ export default function Home({ initialFoods }: { initialFoods: Food[] }) {
         </button>
       </div>
 
-      <div className="flex flex-1 items-center justify-center gap-2">
+      <div className="relative flex w-full items-center justify-center">
+        <div className="absolute left-0 top-1/2 z-20 -translate-y-1/2">
         <SkipButton
           label="이전 카드로 이동"
           disabled={index === 0}
@@ -110,11 +139,12 @@ export default function Home({ initialFoods }: { initialFoods: Food[] }) {
         >
           ‹
         </SkipButton>
+        </div>
 
         {/* 감각 오브제 자체가 3차원 카드로 동작 */}
         <div
           data-tutorial="card"
-          className="relative z-10 flex aspect-[3/4] min-w-0 max-w-xs flex-1 select-none items-center justify-center overflow-visible"
+          className="relative z-10 flex aspect-[4/5] max-h-[600px] w-full min-w-0 select-none items-center justify-center overflow-visible"
           style={{
             transform: `translate(${pos.x}px, ${pos.y}px) rotate(${pos.x / 20}deg)`,
             transition: "transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)",
@@ -122,6 +152,7 @@ export default function Home({ initialFoods }: { initialFoods: Food[] }) {
         >
           <div className="w-full h-full">
             <SensoryObject
+              preserveOriginalCardSize
               food={food}
               showInfo={showInfo}
               value={cardDamage}
@@ -134,9 +165,11 @@ export default function Home({ initialFoods }: { initialFoods: Food[] }) {
           </div>
         </div>
 
+        <div className="absolute right-0 top-1/2 z-20 -translate-y-1/2">
         <SkipButton label="다음 카드로 이동" tutorial="card" onClick={() => skip(1)}>
           ›
         </SkipButton>
+        </div>
       </div>
 
       <Tutorial
@@ -184,7 +217,7 @@ const API_KEYS = {
   바삭함: "crispy",
 } as const;
 
-function Result({ taste, onRestart }: { taste: Taste; onRestart: () => void }) {
+function Result({ taste, saved, onRestart }: { taste: Taste; saved?: Saved; onRestart: () => void }) {
   const router = useRouter();
   const [selectionContext, setSelectionContext] = useState<{
     recordId: string;
@@ -215,17 +248,23 @@ function Result({ taste, onRestart }: { taste: Taste; onRestart: () => void }) {
     let active = true;
     if (!pending.current || pending.current.attempt !== attempt) {
       requestId.current ??= crypto.randomUUID();
-      const promise = fetch("/api/recommendations", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          requestId: requestId.current,
-          tasteScores: JSON.parse(body),
-        }),
-      }).then(async (response) => {
-        const data = await readApiResponse(response);
-        if (!response.ok)
-          throw new Error(data.error?.message ?? "추천을 불러오지 못했어요.");
+      // 저장된 결과가 있으면 새로 추천받지 않고 그대로 사용
+      const recommend: Promise<Saved> = saved
+        ? Promise.resolve(saved)
+        : fetch("/api/recommendations", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              requestId: requestId.current,
+              tasteScores: JSON.parse(body),
+            }),
+          }).then(async (response) => {
+            const data = await readApiResponse(response);
+            if (!response.ok)
+              throw new Error(data.error?.message ?? "추천을 불러오지 못했어요.");
+            return data;
+          });
+      const promise = recommend.then(async (data) => {
         const todayResponse = await fetch("/api/selections/today", {
           cache: "no-store",
         });
@@ -267,7 +306,7 @@ function Result({ taste, onRestart }: { taste: Taste; onRestart: () => void }) {
     return () => {
       active = false;
     };
-  }, [body, attempt]);
+  }, [body, attempt, saved]);
 
   async function selectMenu(menuId: string) {
     if (!selectionContext || saveLock.current) return;
@@ -344,55 +383,43 @@ function Result({ taste, onRestart }: { taste: Taste; onRestart: () => void }) {
       )}
       {ranking && ranking.length > 0 && (
         <>
-          <div className="rounded-3xl bg-orange-500 p-8 text-center text-white shadow-xl">
-            <p className="text-sm">1위</p>
-            <p className="text-4xl font-bold">{ranking[0].name}</p>
-            <p className="text-sm">
-              유사도 점수 {Math.round(ranking[0].score)} / 100
-            </p>
-            <Tutorial
-              step="result"
-              finishOnClick
-              text={"마음에 드는 메뉴를 선정하거나\n친구에게 공유해 보세요!"}
-            />
-            <button
-              data-tutorial="result"
-              disabled={saving || !selectionContext}
-              className="mt-4 rounded-xl bg-white px-5 py-2 font-bold text-orange-600 disabled:opacity-50"
-              onClick={() => selectMenu(ranking[0].menuId)}
-            >
-              {saving ? "저장 중..." : "메뉴로 선정"}
-            </button>
-            <ShareButton
-              data-tutorial="result"
-              menu={ranking[0].name}
-              className="ml-2 mt-4 rounded-xl bg-white/20 px-5 py-2 font-medium"
-            />
-          </div>
-          <ol className="flex flex-col gap-2">
-            {ranking.slice(1).map((f, i) => (
+          <Tutorial
+            step="result"
+            finishOnClick
+            text={"마음에 드는 메뉴를 선정하거나\n친구에게 공유해 보세요!"}
+          />
+          <ol className="grid grid-cols-2 gap-3">
+            {ranking.slice(0, 5).map((f, i) => (
               <li
                 key={f.menuId}
-                className="flex justify-between rounded-xl bg-white p-3 shadow"
+                className={`flex flex-col gap-2 rounded-2xl bg-white p-3 shadow ${
+                  i === 0 ? "col-span-2 border-2 border-orange-400 p-4" : i > 2 ? "col-span-2" : ""
+                }`}
               >
-                <span>
-                  {i + 2}위 {f.name}
-                </span>
-                <span className="flex items-center gap-2">
-                  <span className="text-gray-500">{Math.round(f.score)}점</span>
+                <div className="relative flex items-center justify-center">
+                  <Medal rank={i + 1} />
+                  <span className={`font-bold ${i === 0 ? "text-3xl" : "text-lg"}`}>{f.name}</span>
+                </div>
+                {i < 3 && (
+                  <FoodImage name={f.name} className={i === 0 ? "aspect-[4/3]" : "aspect-square"} />
+                )}
+                <p className="text-center text-xs text-gray-500">유사도 {Math.round(f.score)}점</p>
+                <div className="flex gap-2">
                   <button
+                    data-tutorial={i === 0 ? "result" : undefined}
                     disabled={saving || !selectionContext}
                     aria-label={`${f.name} 메뉴로 선정`}
-                    className="rounded-lg bg-orange-100 px-3 py-1 text-orange-800 disabled:opacity-50"
+                    className="flex-1 rounded-xl bg-orange-500 py-2 font-bold text-white disabled:opacity-50"
                     onClick={() => selectMenu(f.menuId)}
                   >
-                    선정
+                    {saving ? "저장 중..." : "선정"}
                   </button>
                   <ShareButton
+                    data-tutorial={i === 0 ? "result" : undefined}
                     menu={f.name}
-                    className="rounded-lg border border-gray-300 px-3 py-1 text-gray-600"
+                    className="rounded-xl border border-gray-300 px-3 py-2 text-gray-600"
                   />
-                </span>
+                </div>
               </li>
             ))}
           </ol>
@@ -406,5 +433,39 @@ function Result({ taste, onRestart }: { taste: Taste; onRestart: () => void }) {
         다시 하기
       </button>
     </main>
+  );
+}
+
+// 1~3위는 금·은·동 메달, 나머지는 회색 원
+const MEDAL = ["bg-yellow-400 ring-yellow-200", "bg-gray-300 ring-gray-100", "bg-amber-700 ring-amber-300"];
+function Medal({ rank }: { rank: number }) {
+  return (
+    <span
+      aria-label={`${rank}위`}
+      className={`absolute left-0 flex h-7 w-7 items-center justify-center rounded-full text-sm font-bold text-white shadow ring-2 ${
+        MEDAL[rank - 1] ?? "bg-gray-400 ring-gray-200"
+      }`}
+    >
+      {rank}
+    </span>
+  );
+}
+
+// 사진은 /api/food-image가 위키백과에서 찾아 DB에 저장해 둔 것. 없으면 접시 그림.
+function FoodImage({ name, className }: { name: string; className: string }) {
+  const [failed, setFailed] = useState(false);
+  return failed ? (
+    <div className={`flex items-center justify-center rounded-xl bg-orange-50 text-5xl ${className}`} aria-hidden>
+      🍽️
+    </div>
+  ) : (
+    // eslint-disable-next-line @next/next/no-img-element -- 외부 사진 주소가 음식마다 달라서 일반 img 사용
+    <img
+      src={`/api/food-image?name=${encodeURIComponent(name)}`}
+      alt={name}
+      decoding="async"
+      onError={() => setFailed(true)}
+      className={`w-full rounded-xl object-cover ${className}`}
+    />
   );
 }
