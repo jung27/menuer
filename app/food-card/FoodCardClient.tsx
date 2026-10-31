@@ -18,6 +18,7 @@ import SensoryObject, {
   VISIBLE_SENSORY_TAGS,
 } from "@/components/SensoryObject";
 import ShareButton from "@/app/share/ShareButton";
+import Tutorial from "@/components/Tutorial";
 
 const SHAKE_ACCEL = 10;
 const SHAKE_HOLD_MS = 300;
@@ -112,6 +113,7 @@ export default function Home({ initialFoods }: { initialFoods: Food[] }) {
 
         {/* 감각 오브제 자체가 3차원 카드로 동작 */}
         <div
+          data-tutorial="card"
           className="relative z-10 flex aspect-[3/4] min-w-0 max-w-xs flex-1 select-none items-center justify-center overflow-visible"
           style={{
             transform: `translate(${pos.x}px, ${pos.y}px) rotate(${pos.x / 20}deg)`,
@@ -132,12 +134,17 @@ export default function Home({ initialFoods }: { initialFoods: Food[] }) {
           </div>
         </div>
 
-        <SkipButton label="다음 카드로 이동" onClick={() => skip(1)}>
+        <SkipButton label="다음 카드로 이동" tutorial="card" onClick={() => skip(1)}>
           ›
         </SkipButton>
       </div>
 
+      <Tutorial
+        step="card"
+        text={"끌리는 메뉴만 카드를 눌러 보고 당겨 보세요.\n딱히 끌리지 않으면 › 로 넘겨요.\n다 골랐으면 '추천 받기'!"}
+      />
       <button
+        data-tutorial="card"
         className="rounded-xl bg-orange-500 py-3 font-semibold text-white shadow-md active:scale-[0.99]"
         onClick={() => setFinished(true)}
       >
@@ -149,6 +156,7 @@ export default function Home({ initialFoods }: { initialFoods: Food[] }) {
 
 function SkipButton(props: {
   label: string;
+  tutorial?: string;
   disabled?: boolean;
   onClick: () => void;
   children: React.ReactNode;
@@ -156,6 +164,7 @@ function SkipButton(props: {
   return (
     <button
       aria-label={props.label}
+      data-tutorial={props.tutorial}
       disabled={props.disabled}
       className="flex size-11 shrink-0 items-center justify-center rounded-full bg-white text-2xl text-gray-500 shadow active:scale-95 disabled:opacity-30 disabled:pointer-events-none"
       onClick={props.onClick}
@@ -341,7 +350,13 @@ function Result({ taste, onRestart }: { taste: Taste; onRestart: () => void }) {
             <p className="text-sm">
               유사도 점수 {Math.round(ranking[0].score)} / 100
             </p>
+            <Tutorial
+              step="result"
+              finishOnClick
+              text={"마음에 드는 메뉴를 선정하거나\n친구에게 공유해 보세요!"}
+            />
             <button
+              data-tutorial="result"
               disabled={saving || !selectionContext}
               className="mt-4 rounded-xl bg-white px-5 py-2 font-bold text-orange-600 disabled:opacity-50"
               onClick={() => selectMenu(ranking[0].menuId)}
@@ -349,6 +364,7 @@ function Result({ taste, onRestart }: { taste: Taste; onRestart: () => void }) {
               {saving ? "저장 중..." : "메뉴로 선정"}
             </button>
             <ShareButton
+              data-tutorial="result"
               menu={ranking[0].name}
               className="ml-2 mt-4 rounded-xl bg-white/20 px-5 py-2 font-medium"
             />
