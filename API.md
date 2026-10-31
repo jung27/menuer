@@ -16,7 +16,7 @@
 {"requestId":"추천별 UUID","tasteScores":{"spicy":0.2,"sweet":0.1,"salty":0.3,"oily":0.5,"soupy":0,"crispy":0.5}}
 ```
 
-서버는 추천 후보 49개와 코사인 유사도를 사용해 상위 5개를 저장·반환합니다. 상호작용 카드 20개는 그대로이며, 추천 전용 후보는 `lib/food-catalog.ts`에서 관리합니다. 기존 기록은 변경하지 않고 새 추천 요청부터 반영합니다.
+서버는 기본 추천 후보 49개와 코사인 유사도를 사용해 상위 5개를 저장·반환합니다. 상호작용 카드에도 같은 49개 음식을 사용하며, 처음 시작할 때와 다시 시작할 때 전체 순서를 섞습니다. 목록은 `lib/food-catalog.ts`에서 관리합니다. 기존 기록은 변경하지 않고 새 추천 요청부터 반영합니다.
 
 추가 메뉴의 6가지 감각 점수는 주관적인 MVP 초깃값으로, 팀 검토 후 조정할 수 있습니다. `interactionMs` 방식에도 추가 후보를 반영하되 기존 메뉴 ID와 상위 3개 응답 형식은 유지합니다.
 
@@ -160,3 +160,31 @@ DB 컬렉션은 `recommendations`이며 날짜 조회 인덱스는
 추천 저장 중 오류가 나면 저장 완료 여부가 불확실할 수 있으므로 같은 requestId로 재시도합니다. 오류 ID는 추천 requestId와 별개입니다.
 
 검증: `node --experimental-strip-types tests/server-failure.check.mjs`
+
+## 오늘 하루 식사 공유 (백엔드)
+
+`GET /api/selections/today/share` — 로그인 쿠키 필요. 한국 시간 오늘의 **선정 완료된** 아침·점심·저녁을 조회합니다. 먹었는지 별도 확인하는 기능은 아니며, 추천받기만 하고 선정하지 않은 메뉴는 제외합니다.
+
+응답 예시:
+```json
+{
+  "type": "day",
+  "version": 1,
+  "date": "2026-11-01",
+  "timezone": "Asia/Seoul",
+  "title": "2026-11-01 오늘의 식사",
+  "meals": { "breakfast": { "name": "김밥" }, "lunch": { "name": "우동" }, "dinner": null },
+  "selectedCount": 2,
+  "canShare": true,
+  "shareText": "2026-11-01 오늘의 식사\n아침: 김밥\n점심: 우동",
+  "sharePath": "/share?type=day&date=2026-11-01&breakfast=%EA%B9%80%EB%B0%A5&lunch=%EC%9A%B0%EB%8F%99"
+}
+```
+
+- 하나라도 선정했으면 공유 가능. 빈 끼니는 null, 전부 비었으면 200 + canShare:false, selectedCount:0, shareText:null, sharePath:null.
+- 매번 본인 계정의 현재 선정 데이터를 조회하므로 재선정 후 다시 호출하면 변경한 메뉴를 반환합니다. 캐시는 private, no-store입니다.
+- 다른 계정 ID나 날짜를 입력받지 않습니다. 계정 ID·이메일·추천 ID·선정 시간은 공유 데이터에 포함하지 않습니다.
+- 프론트는 공유 버튼 클릭 시 호출하고 `new URL(sharePath, window.location.origin).href`로 공개 링크를 구성합니다. 비로그인은 401이며 오류 응답은 기존 규격을 따릅니다.
+- **프론트 작업 필요:** 현재 `/share`는 단일 menu만 표시합니다. `type=day`일 때 date/breakfast/lunch/dinner 쿼리를 읽어 하루 카드를 표시하는 분기를 추가해야 합니다. 받는 사람은 로그인이나 이 API 호출 없이 URL만으로 표시합니다. 입력 길이·날짜 검증과 안전한 텍스트 렌더링을 적용해주세요.
+- 링크는 공유 당시 스냅샷입니다. 이후 재선정해도 이미 보낸 링크는 바뀌지 않습니다. 공유 링크에 포함된 메뉴는 누구나 읽고 수정할 수 있으며 계정 기록에 자동 저장하지 않습니다.
+- 검증: `node --experimental-strip-types tests/daily-share.test.mjs`

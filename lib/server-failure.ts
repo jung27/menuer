@@ -2,7 +2,7 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 import { unstable_rethrow } from "next/navigation";
 
-export type Operation = "auth" | "login" | "signup" | "logout" | "session" | "recommendation" | "records" | "selection-save" | "selections" | "today" | "db-health" | "food-card";
+export type Operation = "auth" | "login" | "signup" | "logout" | "session" | "recommendation" | "records" | "selection-save" | "selections" | "today" | "daily-share" | "db-health" | "food-card";
 
 // 원문 메시지/스택/접속 주소/사용자 입력을 출력하지 않고 고정된 분류만 사용합니다.
 export function classifyFailure(error: unknown) {

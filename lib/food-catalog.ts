@@ -1,7 +1,7 @@
 import { FOODS } from "../app/food-card/foods";
 import { TAGS, type Food, type Taste } from "../app/food-card/taste";
 
-// 추천 전용 후보입니다. 추가해도 사용자가 넘기는 3D 카드 수는 늘지 않습니다.
+// 추가 음식은 추천 후보와 사용자가 넘기는 3D 카드에 함께 포함됩니다.
 // 순서: 매운맛, 단맛, 짠맛, 기름짐, 국물, 바삭함 (0~1).
 // 조리법에 따라 달라지는 주관적 MVP 초깃값이며 실측값이 아닙니다.
 const food = (name: string, ...scores: [number, number, number, number, number, number]): Food => ({
