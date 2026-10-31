@@ -14,7 +14,6 @@ import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment
 import type { Food, Tag } from "@/app/food-card/taste";
 import { SensoryAudio, soundForGesture, prepareSensoryAudio } from "@/lib/sensory-audio";
 import { foodSoundPattern } from "@/lib/food-sound";
-import { cardCameraDistance } from "@/lib/card-framing";
 
 // 실제 3D 입체 지오메트리 구조 타입 (단순 2D 텍스처가 아니라 메쉬의 3D 구조와 물리 자체가 다름!)
 export type SurfacePatternType =
@@ -2600,22 +2599,6 @@ function SensoryCard3D({
 
       groupRef.current.rotation.x = currentRotation.current.x;
       groupRef.current.rotation.y = currentRotation.current.y;
-      // Fixed camera distance clips the card in narrow/mobile previews. Fit the
-      // rotated, inflated and stretched envelope to the actual canvas dimensions.
-      if (camera instanceof THREE.PerspectiveCamera && size.width > 0 && size.height > 0) {
-        groupRef.current.updateMatrix();
-        const m = groupRef.current.matrix.elements;
-        const drag = viscousDrag.current;
-        const hx = CARD_WIDTH / 2 + 0.12 + Math.abs(drag.x) * 1.8;
-        const hy = CARD_HEIGHT / 2 + 0.12 + Math.abs(drag.y) * 1.8;
-        const hz = CARD_DEPTH / 2 + 0.16 + Math.abs(drag.z) * 1.8;
-        const width = Math.abs(m[0]) * hx + Math.abs(m[4]) * hy + Math.abs(m[8]) * hz;
-        const height = Math.abs(m[1]) * hx + Math.abs(m[5]) * hy + Math.abs(m[9]) * hz;
-        const depth = Math.abs(m[2]) * hx + Math.abs(m[6]) * hy + Math.abs(m[10]) * hz;
-        const distance = cardCameraDistance(width, height, depth, size.width / size.height, camera.fov);
-        camera.position.z = Math.max(distance, THREE.MathUtils.lerp(camera.position.z, distance, 1 - Math.exp(-dt * 6)));
-        camera.updateMatrixWorld();
-      }
     }
 
     if (config.redness > 0.1) {
@@ -2992,6 +2975,7 @@ function FoodLabel({ food }: { food: Food }) {
 }
 
 export interface SensoryCanvasCardProps {
+  preserveOriginalCardSize?: boolean;
   food?: Food;
   preset?: SensoryPresetType;
   customConfig?: Partial<SensoryPhysicsProps>;
@@ -3000,7 +2984,24 @@ export interface SensoryCanvasCardProps {
   onChange: (newValue: number) => void;
 }
 
+// Expand the visible surroundings without enlarging the card itself.
+// The previous layout was max-w-md, with 32px padding and 104px for arrows/gaps.
+function OriginalCardFraming() {
+  const { camera, size } = useThree();
+  useEffect(() => {
+    if (!(camera instanceof THREE.PerspectiveCamera) || size.height <= 0) return;
+    const originalWidth = Math.max(120, Math.min(416, size.width) - 104);
+    const originalHeight = originalWidth * 4 / 3;
+    camera.fov = THREE.MathUtils.radToDeg(
+      2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(42 / 2)) * size.height / originalHeight),
+    );
+    camera.updateProjectionMatrix();
+  }, [camera, size.width, size.height]);
+  return null;
+}
+
 export default function SensoryObject({
+  preserveOriginalCardSize = false,
   food,
   preset = "crispy",
   customConfig,
@@ -3061,6 +3062,7 @@ export default function SensoryObject({
         camera={{ position: [0, 0, 3.65], fov: 42 }}
         gl={{ antialias: true, alpha: true }}
       >
+        {preserveOriginalCardSize && <OriginalCardFraming />}
         <StudioEnvironment />
         <ambientLight intensity={0.5} />
         <directionalLight position={[4, 6, 5]} intensity={1.35} castShadow />

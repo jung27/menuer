@@ -76,7 +76,7 @@ function Home({ initialFoods }: { initialFoods: Food[] }) {
   const gauge = toGauge(taste);
 
   return (
-    <main className="mx-auto flex w-full min-w-0 max-w-md flex-1 flex-col gap-3 overflow-x-clip p-4">
+    <main className="mx-auto flex w-full min-w-0 max-w-2xl flex-1 flex-col gap-3 overflow-x-clip p-4">
       {/* 외부로 드러나는 4대 물리 감각 특성(매운맛·바삭함·국물·기름짐)만 표시 */}
       <ul className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
         {VISIBLE_SENSORY_TAGS.map((t) => (
@@ -109,7 +109,8 @@ function Home({ initialFoods }: { initialFoods: Food[] }) {
         </button>
       </div>
 
-      <div className="flex flex-1 items-center justify-center gap-2">
+      <div className="relative flex w-full items-center justify-center">
+        <div className="absolute left-0 top-1/2 z-20 -translate-y-1/2">
         <SkipButton
           label="이전 카드로 이동"
           disabled={index === 0}
@@ -117,11 +118,12 @@ function Home({ initialFoods }: { initialFoods: Food[] }) {
         >
           ‹
         </SkipButton>
+        </div>
 
         {/* 감각 오브제 자체가 3차원 카드로 동작 */}
         <div
           data-tutorial="card"
-          className="relative z-10 flex aspect-[3/4] min-w-0 max-w-xs flex-1 select-none items-center justify-center overflow-visible"
+          className="relative z-10 flex aspect-[4/5] max-h-[600px] w-full min-w-0 select-none items-center justify-center overflow-visible"
           style={{
             transform: `translate(${pos.x}px, ${pos.y}px) rotate(${pos.x / 20}deg)`,
             transition: "transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)",
@@ -129,6 +131,7 @@ function Home({ initialFoods }: { initialFoods: Food[] }) {
         >
           <div className="w-full h-full">
             <SensoryObject
+              preserveOriginalCardSize
               food={food}
               showInfo={showInfo}
               value={cardDamage}
@@ -141,9 +144,11 @@ function Home({ initialFoods }: { initialFoods: Food[] }) {
           </div>
         </div>
 
+        <div className="absolute right-0 top-1/2 z-20 -translate-y-1/2">
         <SkipButton label="다음 카드로 이동" tutorial="card" onClick={() => skip(1)}>
           ›
         </SkipButton>
+        </div>
       </div>
 
       <Tutorial
