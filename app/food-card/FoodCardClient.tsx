@@ -24,7 +24,14 @@ const SHAKE_ACCEL = 10;
 const SHAKE_HOLD_MS = 300;
 const TICK_MS = 100;
 
-export default function Home({ initialFoods }: { initialFoods: Food[] }) {
+// Next.js가 다른 페이지로 갔다 와도 화면 상태를 그대로 보존해서(cacheComponents),
+// 링크로 새로 들어올 때마다 카드부터 다시 시작하도록 bfcacheId로 초기화. 뒤로 가기에서는 그대로 유지됨.
+export default function FoodCard(props: { initialFoods: Food[] }) {
+  const { bfcacheId } = useRouter();
+  return <Home key={bfcacheId} {...props} />;
+}
+
+function Home({ initialFoods }: { initialFoods: Food[] }) {
   const [foods, setFoods] = useState(initialFoods);
   const [index, setIndex] = useState(0);
   const [taste, setTaste] = useState(emptyTaste);
