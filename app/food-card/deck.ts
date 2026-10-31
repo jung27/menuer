@@ -1,10 +1,6 @@
 import type { Food } from "./taste";
 import { shuffle } from "./shuffle";
 
-// Temporary local sound preview. Set false to restore the normal random deck.
-// Production always uses the normal category-based draw.
-const SOUND_PREVIEW_IN_DEVELOPMENT = true;
-const SOUND_PREVIEW_FOODS = ["김치찌개", "불고기", "떡볶이", "치킨", "샐러드"];
 
 const groups = {
   soup: ["김치찌개", "된장찌개", "마라탕", "국밥", "부대찌개", "순두부찌개", "육개장", "삼계탕", "설렁탕"],
@@ -21,10 +17,6 @@ export function cardCategory(food: Food): string {
 }
 
 export function createCardDeck(foods: readonly Food[], random = Math.random): Food[] {
-  if (process.env.NODE_ENV === "development" && SOUND_PREVIEW_IN_DEVELOPMENT) {
-    const preview = SOUND_PREVIEW_FOODS.map(name => foods.find(food => food.name === name));
-    if (preview.every((food): food is Food => food !== undefined)) return preview;
-  }
   const buckets = new Map<string, Food[]>();
   const seen = new Set<string>();
   for (const food of foods) {
