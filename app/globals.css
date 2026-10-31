@@ -1,1 +1,23 @@
 @import "tailwindcss";
+
+/* 강원교육모두체 (눈누, 웹 임베딩·상업 이용 가능)
+   보통 글씨(500 이하)는 Light, 굵은 글씨(600 이상)는 Bold.
+   한글·영문·숫자에만 적용: 화살표 같은 기호는 기본 글꼴로 표시 */
+@font-face {
+  font-family: "GangwonEducationModuche";
+  src: url("https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2201-2@1.0/GangwonEdu_OTFLightA.woff") format("woff");
+  font-weight: 100 500;
+  font-display: swap;
+  unicode-range: U+20-7E, U+1100-11FF, U+3130-318F, U+AC00-D7A3;
+}
+@font-face {
+  font-family: "GangwonEducationModuche";
+  src: url("https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2201-2@1.0/GangwonEdu_OTFBoldA.woff") format("woff");
+  font-weight: 600 900;
+  font-display: swap;
+  unicode-range: U+20-7E, U+1100-11FF, U+3130-318F, U+AC00-D7A3;
+}
+
+@theme {
+  --font-sans: "GangwonEducationModuche", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+}
