@@ -344,55 +344,43 @@ function Result({ taste, onRestart }: { taste: Taste; onRestart: () => void }) {
       )}
       {ranking && ranking.length > 0 && (
         <>
-          <div className="rounded-3xl bg-orange-500 p-8 text-center text-white shadow-xl">
-            <p className="text-sm">1위</p>
-            <p className="text-4xl font-bold">{ranking[0].name}</p>
-            <p className="text-sm">
-              유사도 점수 {Math.round(ranking[0].score)} / 100
-            </p>
-            <Tutorial
-              step="result"
-              finishOnClick
-              text={"마음에 드는 메뉴를 선정하거나\n친구에게 공유해 보세요!"}
-            />
-            <button
-              data-tutorial="result"
-              disabled={saving || !selectionContext}
-              className="mt-4 rounded-xl bg-white px-5 py-2 font-bold text-orange-600 disabled:opacity-50"
-              onClick={() => selectMenu(ranking[0].menuId)}
-            >
-              {saving ? "저장 중..." : "메뉴로 선정"}
-            </button>
-            <ShareButton
-              data-tutorial="result"
-              menu={ranking[0].name}
-              className="ml-2 mt-4 rounded-xl bg-white/20 px-5 py-2 font-medium"
-            />
-          </div>
-          <ol className="flex flex-col gap-2">
-            {ranking.slice(1).map((f, i) => (
+          <Tutorial
+            step="result"
+            finishOnClick
+            text={"마음에 드는 메뉴를 선정하거나\n친구에게 공유해 보세요!"}
+          />
+          <ol className="grid grid-cols-2 gap-3">
+            {ranking.slice(0, 5).map((f, i) => (
               <li
                 key={f.menuId}
-                className="flex justify-between rounded-xl bg-white p-3 shadow"
+                className={`flex flex-col gap-2 rounded-2xl bg-white p-3 shadow ${
+                  i === 0 ? "col-span-2 border-2 border-orange-400 p-4" : i > 2 ? "col-span-2" : ""
+                }`}
               >
-                <span>
-                  {i + 2}위 {f.name}
-                </span>
-                <span className="flex items-center gap-2">
-                  <span className="text-gray-500">{Math.round(f.score)}점</span>
+                <div className="relative flex items-center justify-center">
+                  <Medal rank={i + 1} />
+                  <span className={`font-bold ${i === 0 ? "text-3xl" : "text-lg"}`}>{f.name}</span>
+                </div>
+                {i < 3 && (
+                  <FoodImage name={f.name} className={i === 0 ? "aspect-[4/3]" : "aspect-square"} />
+                )}
+                <p className="text-center text-xs text-gray-500">유사도 {Math.round(f.score)}점</p>
+                <div className="flex gap-2">
                   <button
+                    data-tutorial={i === 0 ? "result" : undefined}
                     disabled={saving || !selectionContext}
                     aria-label={`${f.name} 메뉴로 선정`}
-                    className="rounded-lg bg-orange-100 px-3 py-1 text-orange-800 disabled:opacity-50"
+                    className="flex-1 rounded-xl bg-orange-500 py-2 font-bold text-white disabled:opacity-50"
                     onClick={() => selectMenu(f.menuId)}
                   >
-                    선정
+                    {saving ? "저장 중..." : "선정"}
                   </button>
                   <ShareButton
+                    data-tutorial={i === 0 ? "result" : undefined}
                     menu={f.name}
-                    className="rounded-lg border border-gray-300 px-3 py-1 text-gray-600"
+                    className="rounded-xl border border-gray-300 px-3 py-2 text-gray-600"
                   />
-                </span>
+                </div>
               </li>
             ))}
           </ol>
@@ -406,5 +394,38 @@ function Result({ taste, onRestart }: { taste: Taste; onRestart: () => void }) {
         다시 하기
       </button>
     </main>
+  );
+}
+
+// 1~3위는 금·은·동 메달, 나머지는 회색 원
+const MEDAL = ["bg-yellow-400 ring-yellow-200", "bg-gray-300 ring-gray-100", "bg-amber-700 ring-amber-300"];
+function Medal({ rank }: { rank: number }) {
+  return (
+    <span
+      aria-label={`${rank}위`}
+      className={`absolute left-0 flex h-7 w-7 items-center justify-center rounded-full text-sm font-bold text-white shadow ring-2 ${
+        MEDAL[rank - 1] ?? "bg-gray-400 ring-gray-200"
+      }`}
+    >
+      {rank}
+    </span>
+  );
+}
+
+// 사진은 /api/food-image가 위키백과에서 찾아 DB에 저장해 둔 것. 없으면 접시 그림.
+function FoodImage({ name, className }: { name: string; className: string }) {
+  const [failed, setFailed] = useState(false);
+  return failed ? (
+    <div className={`flex items-center justify-center rounded-xl bg-orange-50 text-5xl ${className}`} aria-hidden>
+      🍽️
+    </div>
+  ) : (
+    // eslint-disable-next-line @next/next/no-img-element -- 외부 사진 주소가 음식마다 달라서 일반 img 사용
+    <img
+      src={`/api/food-image?name=${encodeURIComponent(name)}`}
+      alt={name}
+      onError={() => setFailed(true)}
+      className={`w-full rounded-xl object-cover ${className}`}
+    />
   );
 }
