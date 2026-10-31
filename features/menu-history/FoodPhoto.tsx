@@ -19,7 +19,7 @@ export default function FoodPhoto({ name, imageUrl }: FoodPhotoProps) {
           src={imageUrl}
           alt={`${name} 사진`}
           fill
-          sizes="(max-width: 600px) 80px, 144px"
+          sizes="(max-width: 600px) 64px, (max-width: 760px) 96px, 120px"
           unoptimized
           className="mh-food-image"
           onError={() => setFailedUrl(imageUrl)}
@@ -31,7 +31,6 @@ export default function FoodPhoto({ name, imageUrl }: FoodPhotoProps) {
             <circle cx="8.5" cy="10" r="1.5" stroke="currentColor" strokeWidth="1.4" />
             <path d="m5 18 4.5-4.5 3 3 3.5-5 3 4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
-          <span>사진 준비 중</span>
         </div>
       )}
     </div>
