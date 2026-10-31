@@ -1,4 +1,5 @@
 import Link from "next/link";
+import UserMenu from "@/components/UserMenu";
 import FoodPhoto from "./FoodPhoto";
 import {
   formatHistoryDate,
@@ -34,6 +35,7 @@ export default function MenuHistoryHome({
       <header className="mh-header">
         <div className="mh-header-inner">
           <MenuHistoryBrand />
+          <UserMenu />
         </div>
       </header>
 

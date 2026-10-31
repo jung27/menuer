@@ -8,11 +8,11 @@
 `POST /api/auth/signup`, Content-Type: application/json
 
 ```json
-{"email":"user@example.com","password":"15자 이상 실제 비밀번호","nickname":"메뉴고민중"}
+{"email":"user@example.com","password":"10자 이상 실제 비밀번호","nickname":"메뉴고민중"}
 ```
 
 - 이메일: 공백 제거·소문자로 정규화, 최대 254자, DB 고유 인덱스로 중복 방지.
-- 비밀번호: 15~128자. 공백을 임의 제거하거나 자르지 않습니다.
+- 비밀번호: 10~128자. 공백을 임의 제거하거나 자르지 않습니다.
 - 닉네임: 양끝 공백 제거 후 1~30자.
 - 성공: 201 `{"user":{"id":"...","email":"...","nickname":"..."}}`.
 - 회원가입 직후 자동 로그인하지 않습니다. 로그인 화면으로 이동하세요.
