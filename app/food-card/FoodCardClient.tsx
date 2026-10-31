@@ -4,7 +4,7 @@ import { readApiResponse } from "@/lib/read-api-response";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { RECOMMENDATION_FOODS } from "@/lib/food-catalog";
-import { shuffle } from "./shuffle";
+import { createCardDeck } from "./deck";
 import {
   TAGS,
   WEIGHTS,
@@ -56,7 +56,7 @@ export default function Home({ initialFoods }: { initialFoods: Food[] }) {
   }
 
   function restart() {
-    setFoods(shuffle(RECOMMENDATION_FOODS));
+    setFoods(createCardDeck(RECOMMENDATION_FOODS));
     setIndex(0);
     setCardDamage(0);
     setTaste(emptyTaste());

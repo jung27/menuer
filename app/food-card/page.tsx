@@ -4,7 +4,7 @@ import { connection } from "next/server";
 import { AuthError, requireUser } from "@/lib/auth";
 import FoodCardClient from "./FoodCardClient";
 import { RECOMMENDATION_FOODS } from "@/lib/food-catalog";
-import { shuffle } from "./shuffle";
+import { createCardDeck } from "./deck";
 import { reportFailure } from "@/lib/server-failure";
 
 export default function FoodCardPage(props: PageProps<"/food-card">) {
@@ -31,5 +31,5 @@ async function AuthenticatedFoodCard({ searchParams }: PageProps<"/food-card">) 
     const failure = reportFailure(error, "food-card");
     return <p role="alert" className="p-8 text-center">{failure.error.message}</p>;
   }
-  return <FoodCardClient initialFoods={shuffle(RECOMMENDATION_FOODS)} />;
+  return <FoodCardClient initialFoods={createCardDeck(RECOMMENDATION_FOODS)} />;
 }
