@@ -1,6 +1,7 @@
 import { recommendMenus, recommendFoodCards, sensationKeys, type SensationValues } from "@/lib/recommendations";
 import { assertSameOrigin, authFailure, requireUser } from "@/lib/auth";
 import { publicRecord, saveRecommendation } from "@/lib/records";
+import { failureResponse } from "@/lib/server-failure";
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -13,7 +14,7 @@ function badRequest(message: string) {
 export async function POST(request: Request) {
   let user;
   try { assertSameOrigin(request); user = await requireUser(); }
-  catch (error) { return authFailure(error); }
+  catch (error) { return authFailure(error, "recommendation"); }
   let body: unknown;
   try {
     body = await request.json();
@@ -73,7 +74,7 @@ export async function POST(request: Request) {
       return Response.json({ error: { code: "REQUEST_ID_CONFLICT", message: "다른 입력에는 새 requestId를 사용해주세요." } }, { status: 409 });
     }
     return Response.json(publicRecord(saved), { headers: { "Cache-Control": "no-store" } });
-  } catch {
-    return Response.json({ error: { code: "DATABASE_UNAVAILABLE", message: "저장하지 못했어요. 같은 requestId로 다시 시도해주세요." } }, { status: 503 });
+  } catch (error) {
+    return failureResponse(error, "recommendation");
   }
 }

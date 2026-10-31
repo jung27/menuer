@@ -1,4 +1,5 @@
 "use client";
+import { readApiResponse } from "@/lib/read-api-response";
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -212,13 +213,13 @@ function Result({ taste, onRestart }: { taste: Taste; onRestart: () => void }) {
           tasteScores: JSON.parse(body),
         }),
       }).then(async (response) => {
-        const data = await response.json();
+        const data = await readApiResponse(response);
         if (!response.ok)
           throw new Error(data.error?.message ?? "추천을 불러오지 못했어요.");
         const todayResponse = await fetch("/api/selections/today", {
           cache: "no-store",
         });
-        const today = await todayResponse.json();
+        const today = await readApiResponse(todayResponse);
         if (!todayResponse.ok)
           throw new Error(
             today.error?.message ?? "오늘 날짜를 불러오지 못했어요.",
@@ -269,7 +270,7 @@ function Result({ taste, onRestart }: { taste: Taste; onRestart: () => void }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...selectionContext, menuId }),
       });
-      const result = await response.json();
+      const result = await readApiResponse(response);
       if (!response.ok)
         throw new Error(
           result.error?.message ?? "선정 메뉴를 저장하지 못했어요.",

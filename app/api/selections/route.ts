@@ -6,7 +6,7 @@ export async function PUT(request: Request) {
     const user = await requireUser();
     const body = await readAuthBody(request);
     return authResponse(await selectMenu(user.id, body));
-  } catch (error) { return authFailure(error); }
+  } catch (error) { return authFailure(error, "selection-save"); }
 }
 
 export async function GET(request: Request) {
@@ -16,5 +16,5 @@ export async function GET(request: Request) {
     const from = parseDate(params.get("from"));
     const to = parseDate(params.get("to"));
     return authResponse(await listSelections(user.id, from, to));
-  } catch (error) { return authFailure(error); }
+  } catch (error) { return authFailure(error, "selections"); }
 }

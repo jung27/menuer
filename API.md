@@ -142,3 +142,21 @@ PowerShell의 쿠키와 브라우저의 쿠키는 서로 다릅니다.
 DB 컬렉션은 `recommendations`이며 날짜 조회 인덱스는
 `{userId:1,recordDate:1,createdAt:-1,_id:-1}`입니다.
 인증 초기화 시 인덱스를 자동 생성합니다. `_id` 고유 인덱스가 중복 저장을 방지합니다.
+
+## 서버 오류 추적
+
+예상하지 못한 서버 오류에는 `error.code`, `error.errorId`, `error.message`가 포함됩니다. 화면의 오류 ID와 서버 터미널의 `server_failure` JSON 로그의 `errorId`가 일치합니다. API는 `X-Error-Id` 헤더도 반환합니다.
+
+- `DB_AUTH_FAILED`: DB 계정 인증 실패. 서버의 DB 사용자/비밀번호 설정 확인.
+- `DB_CONFIG_INVALID`: 환경변수 누락 또는 연결 URI 형식 오류.
+- `DB_DNS_FAILED`: DB 호스트 주소 조회 실패. 주소와 서버 DNS/네트워크 확인.
+- `DB_CONNECTION_FAILED`: DB 네트워크 연결 실패.
+- `DB_TIMEOUT`: DB 연결 또는 응답 시간 초과. Atlas IP 허용 목록, 네트워크, DB 상태 확인. 접속자 수가 원인이라고 단정하지 않습니다.
+- `DB_OPERATION_FAILED`: 그 밖의 MongoDB 처리 실패.
+- `INTERNAL_ERROR`: 그 밖의 서버 내부 오류(500).
+
+서버 로그의 `operation`은 login/signup/logout/session/recommendation/records/selection-save/selections/today/db-health/food-card 중 실패 지점을 나타냅니다. 오류 원문·스택·접속 URI·이메일·쿠키·요청 본문은 기록하지 않습니다. 잘못된 로그인(401), 입력 오류(400), 횟수 제한(429) 등 예상된 오류는 기존 응답을 유지합니다.
+
+추천 저장 중 오류가 나면 저장 완료 여부가 불확실할 수 있으므로 같은 requestId로 재시도합니다. 오류 ID는 추천 requestId와 별개입니다.
+
+검증: `node --experimental-strip-types tests/server-failure.check.mjs`

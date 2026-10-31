@@ -5,7 +5,7 @@ import { assertSameOrigin, authFailure, requireUser } from "@/lib/auth";
 // 받는 값: { "매운맛": 30, "단맛": 12, ... }  돌려주는 값: { ranking: [...Top 5] }
 export async function POST(req: Request) {
   try { assertSameOrigin(req); await requireUser(); }
-  catch (error) { return authFailure(error); }
+  catch (error) { return authFailure(error, "recommendation"); }
   const body = await req.json().catch(() => null);
   if (!body || typeof body !== "object") {
     return Response.json({ error: "취향 JSON이 필요합니다" }, { status: 400 });
