@@ -7,7 +7,7 @@ test("all existing taste, physics and color controls are present", () => {
   assert.equal(TASTE_FIELDS.length, 6);
   assert.equal(Object.keys(PHYSICS_FIELDS).length, 13);
   assert.equal(Object.keys(draft.physics).length, 16);
-  assert.equal(Object.keys(SURFACE_PATTERNS).length, 7);
+  assert.equal(Object.keys(SURFACE_PATTERNS).length, 8);
   assert.equal(new Set(COLOR_PALETTE).size, 40);
 });
 test("valid configuration round-trips without accepting owner fields", () => {
