@@ -13,7 +13,6 @@ const PICKED: Record<string, string> = {
   치킨: "Korean fried chicken 3 banban.jpg",
   비빔국수: "Bibim-guksu.jpg",
   족발: "Korean.food-Jokbal-01.jpg",
-  쌀국수: "Bowl of Meatball pho.jpg",
   냉면: "Naengmyeon (cold noodles).jpg",
   볶음밥: "Bokkeum-bap.jpg",
   파스타: "Espaguetis carbonara.jpg",
@@ -25,6 +24,8 @@ const PICKED: Record<string, string> = {
 export async function GET(request: Request) {
   const name = new URL(request.url).searchParams.get("name")?.trim().slice(0, 50);
   if (!name) return new Response(null, { status: 400 });
+  // Generated 4:3 photo served locally, independent of Wikimedia availability.
+  if (name === "쌀국수") return redirect("/food-images/pho-ai.webp");
   if (PICKED[name]) {
     return redirect(`https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(PICKED[name])}?width=600`);
   }

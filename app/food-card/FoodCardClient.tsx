@@ -477,6 +477,7 @@ function FoodImage({ name, className, image, custom }: {
   name: string; className: string; image?: string | null; custom: boolean;
 }) {
   const [failed, setFailed] = useState(false);
+  const isPho = !custom && name === "쌀국수";
   return failed || (custom && !image) ? (
     <div className={`flex items-center justify-center rounded-xl bg-accent-soft text-5xl ${className}`} aria-hidden>
       🍽️
@@ -484,7 +485,7 @@ function FoodImage({ name, className, image, custom }: {
   ) : (
     // eslint-disable-next-line @next/next/no-img-element -- 외부 사진 주소가 음식마다 달라서 일반 img 사용
     <img
-      src={custom ? image! : `/api/food-image?name=${encodeURIComponent(name)}`}
+      src={custom ? image! : isPho ? "/food-images/pho-ai.webp" : `/api/food-image?name=${encodeURIComponent(name)}`}
       alt={name}
       decoding="async"
       onError={() => setFailed(true)}
