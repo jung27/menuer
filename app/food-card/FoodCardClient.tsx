@@ -13,7 +13,6 @@ import {
   type Food,
   type Taste,
 } from "./taste";
-import "./gauge.css";
 import SensoryObject, {
   VISIBLE_SENSORY_TAGS,
 } from "@/components/SensoryObject";
@@ -70,18 +69,17 @@ export default function Home() {
       {/* 외부로 드러나는 4대 물리 감각 특성(매운맛·바삭함·국물·기름짐)만 표시 */}
       <ul className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
         {VISIBLE_SENSORY_TAGS.map((t) => (
-          <li
-            key={t}
-            className="gauge"
-            style={{ "--gauge": gauge[t] } as React.CSSProperties}
-            aria-label={`${t} ${gauge[t]}%`}
-          >
+          <li key={t} aria-label={`${t} ${gauge[t]}%`}>
             <div className="flex justify-between">
               <span>{t}</span>
-              <span className="gauge-num tabular-nums" />
+              {/* 숫자는 글자로 직접 표시 (CSS 카운터 애니메이션은 사파리에서 순간적으로 0이 뜸) */}
+              <span className="tabular-nums">{gauge[t]}%</span>
             </div>
             <div className="h-1.5 rounded bg-gray-200">
-              <div className="gauge-bar h-full rounded bg-orange-500" />
+              <div
+                className="h-full rounded bg-orange-500"
+                style={{ width: `${gauge[t]}%`, transition: "width 0.15s linear" }}
+              />
             </div>
           </li>
         ))}
