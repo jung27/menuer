@@ -1,0 +1,22 @@
+/* 상단 막대: --gauge 값이 바뀌면 막대와 숫자가 함께 부드럽게 올라감 */
+@property --gauge {
+  syntax: "<integer>";
+  inherits: true;
+  initial-value: 0;
+}
+
+.gauge {
+  transition: --gauge 0.6s ease-out;
+}
+
+.gauge-num {
+  counter-reset: gauge var(--gauge);
+}
+
+.gauge-num::after {
+  content: counter(gauge) "%";
+}
+
+.gauge-bar {
+  width: calc(var(--gauge) * 1%);
+}

@@ -12,12 +12,15 @@ import {
   type Food,
   type Taste,
 } from "./taste";
+import "./gauge.css";
 
 const SWIPE_PX = 100; // 이 거리 넘게 던지면 스와이프
 const TAP_PX = 10; // 이보다 덜 움직이고 빨리 떼면 누르기
 const TAP_MS = 300;
 const SHAKE_ACCEL = 15; // m/s², 흔들기 감도
-const SHAKE_COOLDOWN_MS = 800;
+const SHAKE_HOLD_MS = 500; // 흔들기가 멈춘 뒤에도 이 시간 동안은 흔드는 중으로 봄
+const HOLD_DELAY_MS = 400; // 이 시간 넘게 잡고 있어야 '잡고 있기'로 침 (던지기와 구분)
+const TICK_MS = 100; // 잡기·흔들기 점수를 반영하는 간격
 const WIGGLE_PX = 30; // 마우스로 흔들 때 한 번 왕복에 필요한 최소 거리
 const WIGGLE_MS = 600; // 이 시간 안에
 const WIGGLE_FLIPS = 3; // 방향을 이만큼 바꾸면 흔들기로 침
@@ -36,8 +39,8 @@ export default function Home() {
     x: { last: 0, from: 0, dir: 0 },
     y: { last: 0, from: 0, dir: 0 },
     flips: [] as number[],
-    lastShake: 0,
   });
+  const shakingUntil = useRef(0);
 
   const food: Food | undefined = FOODS[index];
   const done = finished || !food;
@@ -47,22 +50,35 @@ export default function Home() {
     setTaste((t) => applyInteraction(t, food, w));
   };
 
+  // 잡고 있거나 흔드는 동안 계속 조금씩 음식 점수 쪽으로 다가감
   useEffect(() => {
-    if (!shakeOn || !food) return;
-    let last = 0;
+    if (!food) return;
+    const id = setInterval(() => {
+      const now = Date.now();
+      const s = start.current;
+      const holding =
+        s && now - s.t > HOLD_DELAY_MS && Math.abs(wiggle.current.x.last - s.x) < SWIPE_PX;
+      const rate =
+        now < shakingUntil.current ? WEIGHTS.shakePerSec : holding ? WEIGHTS.holdPerSec : 0;
+      if (!rate) return;
+      touched.current = true;
+      setTaste((t) => applyInteraction(t, food, (rate * TICK_MS) / 1000));
+    }, TICK_MS);
+    return () => clearInterval(id);
+  }, [food]);
+
+  // 폰 흔들기
+  useEffect(() => {
+    if (!shakeOn) return;
     const onMotion = (e: DeviceMotionEvent) => {
       const a = e.acceleration;
-      if (!a) return;
-      const now = Date.now();
-      if (Math.hypot(a.x ?? 0, a.y ?? 0, a.z ?? 0) > SHAKE_ACCEL && now - last > SHAKE_COOLDOWN_MS) {
-        last = now;
-        touched.current = true;
-        setTaste((t) => applyInteraction(t, food, WEIGHTS.shake));
+      if (a && Math.hypot(a.x ?? 0, a.y ?? 0, a.z ?? 0) > SHAKE_ACCEL) {
+        shakingUntil.current = Date.now() + SHAKE_HOLD_MS;
       }
     };
     window.addEventListener("devicemotion", onMotion);
     return () => window.removeEventListener("devicemotion", onMotion);
-  }, [shakeOn, food]);
+  }, [shakeOn]);
 
   async function enableShake() {
     if (typeof DeviceMotionEvent === "undefined") return;
@@ -81,6 +97,7 @@ export default function Home() {
     setTimeout(() => {
       leaving.current = false;
       touched.current = false;
+      shakingUntil.current = 0; // 다음 카드로 흔들기가 넘어가지 않게
       setPos({ x: 0, y: 0 });
       setIndex((i) => i + 1);
     }, 200);
@@ -116,11 +133,7 @@ export default function Home() {
       a.last = v;
     }
     w.flips = w.flips.filter((t) => now - t < WIGGLE_MS);
-    if (w.flips.length >= WIGGLE_FLIPS && now - w.lastShake > SHAKE_COOLDOWN_MS) {
-      w.lastShake = now;
-      w.flips = [];
-      bump(WEIGHTS.shake);
-    }
+    if (w.flips.length >= WIGGLE_FLIPS) shakingUntil.current = now + SHAKE_HOLD_MS;
   }
 
   function onPointerUp(e: React.PointerEvent) {
@@ -135,7 +148,6 @@ export default function Home() {
     if (Math.abs(moved) > SWIPE_PX) return swipe(Math.sign(moved));
     setPos({ x: 0, y: 0 });
     if (dist < TAP_PX && held < TAP_MS) bump(WEIGHTS.tap);
-    else bump(WEIGHTS.dragPerSec * Math.min(held / 1000, 3));
   }
 
   function restart() {
@@ -153,16 +165,18 @@ export default function Home() {
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 p-4">
       <ul className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
         {TAGS.map((t) => (
-          <li key={t}>
+          <li
+            key={t}
+            className="gauge"
+            style={{ "--gauge": gauge[t] } as React.CSSProperties}
+            aria-label={`${t} ${gauge[t]}%`}
+          >
             <div className="flex justify-between">
               <span>{t}</span>
-              <span>{gauge[t]}%</span>
+              <span className="gauge-num tabular-nums" />
             </div>
             <div className="h-1.5 rounded bg-gray-200">
-              <div
-                className="h-full rounded bg-orange-500 transition-all"
-                style={{ width: `${gauge[t]}%` }}
-              />
+              <div className="gauge-bar h-full rounded bg-orange-500" />
             </div>
           </li>
         ))}
