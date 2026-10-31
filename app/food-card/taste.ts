@@ -8,7 +8,6 @@ export const WEIGHTS = {
   tap: 0.2, // 한 번 누를 때 (0~1)
   holdPerSec: 0.15, // 잡고 있는 동안 초당
   shakePerSec: 0.6, // 흔드는 동안 초당
-  swipe: -0.3, // 상호작용 없이 넘길 때만, 방향 상관없음 (-1~0)
 };
 
 export const emptyTaste = (): Taste =>
@@ -16,12 +15,8 @@ export const emptyTaste = (): Taste =>
 
 export function applyInteraction(taste: Taste, food: Food, weight: number): Taste {
   const next = { ...taste };
-  for (const t of TAGS) {
-    next[t] =
-      weight >= 0
-        ? taste[t] + weight * (food.tags[t] - taste[t]) // 음식 점수 쪽으로 다가감
-        : taste[t] * (1 + weight * food.tags[t]); // 그 음식이 가진 맛만 줄어듦
-  }
+  // 음식 점수 쪽으로 다가감 (음식 점수를 넘지 않음)
+  for (const t of TAGS) next[t] = taste[t] + weight * (food.tags[t] - taste[t]);
   return next;
 }
 

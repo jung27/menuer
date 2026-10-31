@@ -6,7 +6,7 @@
 }
 
 .gauge {
-  transition: --gauge 0.6s ease-out;
+  transition: --gauge 0.15s linear; /* 점수 반영 간격(0.1초)과 비슷하게: 멈추면 바로 멈춤 */
 }
 
 .gauge-num {

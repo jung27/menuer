@@ -14,16 +14,16 @@ import {
 } from "./taste";
 import "./gauge.css";
 
-const SWIPE_PX = 100; // 이 거리 넘게 던지면 스와이프
 const TAP_PX = 10; // 이보다 덜 움직이고 빨리 떼면 누르기
 const TAP_MS = 300;
-const SHAKE_ACCEL = 15; // m/s², 흔들기 감도
-const SHAKE_HOLD_MS = 500; // 흔들기가 멈춘 뒤에도 이 시간 동안은 흔드는 중으로 봄
-const HOLD_DELAY_MS = 400; // 이 시간 넘게 잡고 있어야 '잡고 있기'로 침 (던지기와 구분)
+const SHAKE_ACCEL = 10; // m/s², 흔들기 감도
+const WIGGLE_HOLD_MS = 120; // 마우스/손가락이 멈추면 이 시간 뒤 바로 흔들기 끝
+const SHAKE_HOLD_MS = 300; // 폰 흔들기가 멈추면 이 시간 뒤 끝
+const HOLD_DELAY_MS = 400; // 이 시간 넘게 잡고 있어야 '잡고 있기'로 침 (누르기와 구분)
 const TICK_MS = 100; // 잡기·흔들기 점수를 반영하는 간격
-const WIGGLE_PX = 30; // 마우스로 흔들 때 한 번 왕복에 필요한 최소 거리
-const WIGGLE_MS = 600; // 이 시간 안에
-const WIGGLE_FLIPS = 3; // 방향을 이만큼 바꾸면 흔들기로 침
+const WIGGLE_PX = 15; // 마우스로 흔들 때 한 번 왕복에 필요한 최소 거리
+const WIGGLE_MS = 800; // 이 시간 안에
+const WIGGLE_FLIPS = 2; // 방향을 이만큼 바꾸면 흔들기로 침
 
 export default function Home() {
   const [index, setIndex] = useState(0);
@@ -34,7 +34,6 @@ export default function Home() {
   const [shakeOn, setShakeOn] = useState(false);
   const start = useRef<{ x: number; y: number; t: number } | null>(null);
   const leaving = useRef(false);
-  const touched = useRef(false); // 지금 카드에 상호작용을 했는지
   const wiggle = useRef({
     x: { last: 0, from: 0, dir: 0 },
     y: { last: 0, from: 0, dir: 0 },
@@ -46,7 +45,6 @@ export default function Home() {
   const done = finished || !food;
   const bump = (w: number) => {
     if (!food) return;
-    if (w > 0) touched.current = true;
     setTaste((t) => applyInteraction(t, food, w));
   };
 
@@ -56,12 +54,10 @@ export default function Home() {
     const id = setInterval(() => {
       const now = Date.now();
       const s = start.current;
-      const holding =
-        s && now - s.t > HOLD_DELAY_MS && Math.abs(wiggle.current.x.last - s.x) < SWIPE_PX;
+      const holding = s && now - s.t > HOLD_DELAY_MS;
       const rate =
         now < shakingUntil.current ? WEIGHTS.shakePerSec : holding ? WEIGHTS.holdPerSec : 0;
       if (!rate) return;
-      touched.current = true;
       setTaste((t) => applyInteraction(t, food, (rate * TICK_MS) / 1000));
     }, TICK_MS);
     return () => clearInterval(id);
@@ -88,15 +84,13 @@ export default function Home() {
     setShakeOn(true);
   }
 
-  function swipe(dir: number) {
+  // 카드를 dir 방향(-1 왼쪽, 1 오른쪽)으로 날리고 다음 카드로
+  function skip(dir: number) {
     if (!food || leaving.current) return;
     leaving.current = true;
-    // 상호작용한 카드는 넘겨도 안 깎음. 바로 넘긴 카드만 감점.
-    if (!touched.current) bump(WEIGHTS.swipe);
     setPos({ x: dir * 600, y: 0 });
     setTimeout(() => {
       leaving.current = false;
-      touched.current = false;
       shakingUntil.current = 0; // 다음 카드로 흔들기가 넘어가지 않게
       setPos({ x: 0, y: 0 });
       setIndex((i) => i + 1);
@@ -133,7 +127,7 @@ export default function Home() {
       a.last = v;
     }
     w.flips = w.flips.filter((t) => now - t < WIGGLE_MS);
-    if (w.flips.length >= WIGGLE_FLIPS) shakingUntil.current = now + SHAKE_HOLD_MS;
+    if (w.flips.length >= WIGGLE_FLIPS) shakingUntil.current = now + WIGGLE_HOLD_MS;
   }
 
   function onPointerUp(e: React.PointerEvent) {
@@ -141,17 +135,13 @@ export default function Home() {
     if (!s) return;
     start.current = null;
     setDragging(false);
-    const moved = e.clientX - s.x;
-    const dist = Math.hypot(moved, e.clientY - s.y);
+    const dist = Math.hypot(e.clientX - s.x, e.clientY - s.y);
     const held = Date.now() - s.t;
-    // 옆으로 멀리 던지면 넘기기, 아니면 제자리로
-    if (Math.abs(moved) > SWIPE_PX) return swipe(Math.sign(moved));
-    setPos({ x: 0, y: 0 });
+    setPos({ x: 0, y: 0 }); // 놓으면 항상 제자리로
     if (dist < TAP_PX && held < TAP_MS) bump(WEIGHTS.tap);
   }
 
   function restart() {
-    touched.current = false;
     setIndex(0);
     setTaste(emptyTaste());
     setFinished(false);
@@ -186,9 +176,12 @@ export default function Home() {
         넘긴 카드 {index} / {FOODS.length}
       </p>
 
-      <div className="relative flex flex-1 items-center justify-center">
+      <div className="flex flex-1 items-center justify-center gap-2">
+        <SkipButton label="왼쪽으로 넘기기" onClick={() => skip(-1)}>
+          ‹
+        </SkipButton>
         <div
-          className="flex aspect-[3/4] w-full max-w-xs cursor-grab touch-none select-none flex-col items-center justify-center gap-6 rounded-3xl bg-white p-6 shadow-xl"
+          className="relative z-10 flex aspect-[3/4] min-w-0 max-w-xs flex-1 cursor-grab touch-none select-none flex-col items-center justify-center gap-6 rounded-3xl bg-white p-6 shadow-xl"
           style={{
             transform: `translate(${pos.x}px, ${pos.y}px) rotate(${pos.x / 20}deg)`,
             // 놓으면 살짝 튕기면서 제자리로
@@ -221,25 +214,35 @@ export default function Home() {
             ))}
           </ul>
         </div>
+        <SkipButton label="오른쪽으로 넘기기" onClick={() => skip(1)}>
+          ›
+        </SkipButton>
       </div>
 
-      <div className="flex gap-2">
-        <button className="flex-1 rounded-xl bg-gray-200 py-3" onClick={() => swipe(1)}>
-          넘기기
-        </button>
-        <button
-          className="flex-1 rounded-xl bg-orange-500 py-3 text-white"
-          onClick={() => setFinished(true)}
-        >
-          추천 받기
-        </button>
-      </div>
+      <button
+        className="rounded-xl bg-orange-500 py-3 text-white"
+        onClick={() => setFinished(true)}
+      >
+        추천 받기
+      </button>
       {!shakeOn && (
         <button className="text-sm text-gray-500 underline" onClick={enableShake}>
           흔들기 켜기
         </button>
       )}
     </main>
+  );
+}
+
+function SkipButton(props: { label: string; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      aria-label={props.label}
+      className="flex size-11 shrink-0 items-center justify-center rounded-full bg-white text-2xl text-gray-500 shadow active:scale-95"
+      onClick={props.onClick}
+    >
+      {props.children}
+    </button>
   );
 }
 
