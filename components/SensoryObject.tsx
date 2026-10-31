@@ -3053,14 +3053,6 @@ export default function SensoryObject({
   }, [food?.id, preset]);
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [readyPattern, setReadyPattern] = useState<string | null>(null);
-  const [mobileRendering, setMobileRendering] = useState(false);
-  useEffect(() => {
-    const query = window.matchMedia("(pointer: coarse)");
-    const update = () => setMobileRendering(query.matches);
-    update();
-    query.addEventListener("change", update);
-    return () => query.removeEventListener("change", update);
-  }, []);
 
   const mergedConfig: Required<SensoryPhysicsProps> = useMemo(() => {
     const base = food
@@ -3095,7 +3087,7 @@ export default function SensoryObject({
     <div className="relative w-full h-full select-none touch-none">
       <Canvas
         shadows
-        dpr={mobileRendering ? [1, 1.5] : [1, 2]}
+        dpr={[1, 2]}
         camera={{ position: [0, 0, 3.65], fov: 42 }}
         gl={{ antialias: true, alpha: true }}
       >
