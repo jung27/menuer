@@ -1,7 +1,10 @@
+"use client";
+
 import Link from "next/link";
 import ShareButton from "@/app/share/ShareButton";
 import Tutorial from "@/components/Tutorial";
 import DailyShareButton from "@/features/sharing/DailyShareButton";
+import useShareFeedbackGroup from "@/features/sharing/useShareFeedbackGroup";
 
 export type Meal = "breakfast" | "lunch" | "dinner";
 
@@ -29,13 +32,16 @@ export default function DailyRecommendations({
   editableDate?: string;
   recommendHref?: (date: string, meal: Meal) => string; // "추천" 버튼을 눌렀을 때 갈 주소
 }) {
+  const shareFeedback = useShareFeedbackGroup();
   return (
     <>
       {editableDate && <Tutorial step="home" text={"환영해요! 👋\n오늘 아침 메뉴부터 추천받아 볼까요?"} />}
     <ul className="flex flex-col gap-3">
       {days.map((day, i) => (
         <li key={day.date}>
-          <details open={i === 0} className="group rounded-2xl border border-neutral-200 bg-white">
+          <details open={i === 0} onToggle={event => {
+            if (!event.currentTarget.open) shareFeedback.reset(day.date);
+          }} className="group relative rounded-2xl border border-neutral-200 bg-white">
             <summary className="flex cursor-pointer list-none items-center justify-between px-6 py-5 font-semibold text-neutral-900 [&::-webkit-details-marker]:hidden">
               {day.date}
               <span
@@ -45,7 +51,7 @@ export default function DailyRecommendations({
                 ‹
               </span>
             </summary>
-
+            <DailyShareButton day={day} feedback={shareFeedback.forButton(`${day.date}:day`, day.date)} />
             <ul className="flex flex-col gap-2 px-6 pb-6">
               {MEALS.map(({ key, label, icon }) => {
                 const menu = day.meals[key];
@@ -78,6 +84,8 @@ export default function DailyRecommendations({
                     {menu && (
                       <ShareButton
                         menu={menu}
+                        label="음식 공유"
+                        feedback={shareFeedback.forButton(`${day.date}:${key}`, day.date)}
                         className="shrink-0 rounded-xl border border-neutral-300 px-3 py-3 text-sm text-neutral-600 hover:bg-neutral-50"
                       />
                     )}
@@ -85,7 +93,6 @@ export default function DailyRecommendations({
                 );
               })}
             </ul>
-            <DailyShareButton day={day} />
           </details>
         </li>
       ))}

@@ -25,6 +25,16 @@
 .mh-daily-title { margin: 0 0 24px; font-size: 22px; font-weight: 600; letter-spacing: -.6px; }
 .mh-daily-list li > a { min-width: 0; overflow-wrap: anywhere; }
 .mh-daily-list a:focus-visible, .mh-daily-list summary:focus-visible { outline: 2px solid #777; outline-offset: 4px; }
+.mh-daily-list details { interpolate-size: allow-keywords; }
+.mh-daily-list details::details-content {
+  block-size: 0;
+  opacity: 0;
+  overflow: clip;
+  transition: block-size 240ms cubic-bezier(.22,1,.36,1), opacity 180ms ease, content-visibility 240ms allow-discrete;
+}
+.mh-daily-list details[open]::details-content { block-size: auto; opacity: 1; }
+.mh-daily-list details:not([open])::details-content { pointer-events: none; }
+.mh-daily-list summary > span { transition: transform 240ms cubic-bezier(.22,1,.36,1); }
 .mh-add-menu { display: flex; align-items: center; gap: 16px; width: 100%; min-height: 84px; padding: 22px 26px; background: var(--paper); border: 1px solid #dedede; border-radius: 16px; color: var(--ink); transition: background 160ms ease, transform 160ms ease; }
 .mh-add-menu:hover { background: var(--control); }
 .mh-add-menu:active { transform: scale(.995); }
@@ -88,4 +98,7 @@
   .mh-entry-card { margin-top: 18px; padding: 40px 20px; }
   .mh-entry-card h1 { font-size: 27px; }
 }
-@media (prefers-reduced-motion: reduce) { .mh-add-menu { transition: none; } .mh-add-menu:active { transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .mh-add-menu, .mh-daily-list details::details-content, .mh-daily-list summary > span { transition: none; }
+  .mh-add-menu:active { transform: none; }
+}

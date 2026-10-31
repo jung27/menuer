@@ -17,8 +17,9 @@ import { SensoryAudio, soundForGesture, prepareSensoryAudio } from "@/lib/sensor
 // 실제 3D 입체 지오메트리 구조 타입 (단순 2D 텍스처가 아니라 메쉬의 3D 구조와 물리 자체가 다름!)
 export type SurfacePatternType =
   | "fried" // 바삭함: 딱딱한 3D 보로노이 튀김 껍질 조각 + 속살
-  | "meat" // 육질: 3D 입체 근섬유 다발(Muscle Bundles)과 깊은 칼집/결 + 당기면 결대로 벌어짐
+  | "meat" // 육질: 자연스러운 마블링과 그릴 결이 살아있는 3D 고기 블록
   | "noodle" // 면: 수십 가닥의 실제 3D 원통형 면발(3D Tubes) 다발 + 당기면 면발이 가닥별로 분리되며 늘어남
+  | "tteok" // 떡: 매끈하고 통통하며 쫀득하게 늘어나는 3D 찰떡/가래떡 블록
   | "rice" // 밥/쌀: 수백 개의 실제 3D 입체 밥알(3D Rice Grains) 군집 + 누르면 밥알이 뭉개지고 통통 튐
   | "bread" // 빵/도우: 쿠프(칼집)가 파인 폭신한 3D 베이커리 식빵/번 구조 + 메모리폼처럼 깊게 눌렸다 천천히 복원
   | "broth" // 국물: 3D 다중 파동 수면 지오메트리 + 끓어오르는 기포
@@ -178,11 +179,11 @@ export const SENSORY_PRESETS: Record<
   },
   chewy: {
     label: "질김 / 쫀득함",
-    desc: "잡아당기면 3D 면발 가닥들이 쭉 늘어나는 카드입니다!",
+    desc: "잡아당기면 3D 떡/면발이 쭉 늘어나는 카드입니다!",
     config: {
       baseColor: "#a855f7",
       crackColor: "#f3e8ff",
-      pattern: "noodle",
+      pattern: "tteok",
       squish: 0.85,
       hardness: 0.2,
       viscosity: 0.96,
@@ -201,10 +202,49 @@ export const SENSORY_PRESETS: Record<
 };
 
 const FRESH_FOOD_NAMES = new Set(["샐러드", "포케", "월남쌈", "냉채"]);
-const COLD_FOOD_NAMES = new Set(["냉면", "초밥", "김밥", "비빔국수", "샌드위치", ...FRESH_FOOD_NAMES]);
-const MEAT_FOOD_NAMES = new Set(["삼겹살", "불고기", "제육볶음", "찜닭", "보쌈", "족발", "수육"]);
-const RICE_FOOD_NAMES = new Set(["비빔밥", "초밥", "김밥", "김치볶음밥", "볶음밥", "오므라이스", "카레라이스", "규동", "가츠동"]);
-const BREAD_FOOD_NAMES = new Set(["피자", "햄버거", "샌드위치", "토스트", "부리토"]);
+const COLD_FOOD_NAMES = new Set([
+  "냉면",
+  "초밥",
+  "김밥",
+  "비빔국수",
+  "샌드위치",
+  ...FRESH_FOOD_NAMES,
+]);
+const MEAT_FOOD_NAMES = new Set([
+  "삼겹살",
+  "불고기",
+  "제육볶음",
+  "찜닭",
+  "보쌈",
+  "족발",
+  "수육",
+]);
+const RICE_FOOD_NAMES = new Set([
+  "비빔밥",
+  "초밥",
+  "김밥",
+  "김치볶음밥",
+  "볶음밥",
+  "오므라이스",
+  "카레라이스",
+  "규동",
+  "가츠동",
+]);
+const BREAD_FOOD_NAMES = new Set([
+  "피자",
+  "햄버거",
+  "샌드위치",
+  "토스트",
+  "부리토",
+]);
+const TTEOK_FOOD_NAMES = new Set([
+  "떡볶이",
+  "떡꼬치",
+  "떡국",
+  "떡만두국",
+  "인절미",
+  "가래떡",
+]);
 const NOODLE_FOOD_NAMES = new Set([
   "짜장면",
   "짬뽕",
@@ -212,8 +252,6 @@ const NOODLE_FOOD_NAMES = new Set([
   "쌀국수",
   "냉면",
   "파스타",
-  "떡볶이",
-  "떡꼬치",
   "우동",
   "칼국수",
   "멸치국수",
@@ -221,10 +259,19 @@ const NOODLE_FOOD_NAMES = new Set([
   "라볶이",
   "볶음면",
 ]);
-const FRIED_FOOD_NAMES = new Set(["치킨", "돈까스", "탕수육", "꿔바로우", "군만두", "닭강정"]);
+const FRIED_FOOD_NAMES = new Set([
+  "치킨",
+  "돈까스",
+  "탕수육",
+  "꿔바로우",
+  "군만두",
+  "닭강정",
+]);
 
 export function getPatternForFood(food: Food): SurfacePatternType {
   if (FRESH_FOOD_NAMES.has(food.name)) return "fresh";
+  if (TTEOK_FOOD_NAMES.has(food.name) || food.name.includes("떡"))
+    return "tteok";
   if (MEAT_FOOD_NAMES.has(food.name)) return "meat";
   if (RICE_FOOD_NAMES.has(food.name)) return "rice";
   if (BREAD_FOOD_NAMES.has(food.name)) return "bread";
@@ -250,8 +297,9 @@ export function derivePhysicsFromFood(
   const pattern = getPatternForFood(food);
 
   const baseCol = new THREE.Color("#f3d5b5");
-  if (pattern === "meat") baseCol.set("#b45309");
+  if (pattern === "meat") baseCol.set("#9a3412");
   if (pattern === "rice") baseCol.set("#fffbeb");
+  if (pattern === "tteok") baseCol.set("#fff7ed");
   if (pattern === "bread") baseCol.set("#d97706");
   if (pattern === "noodle") baseCol.set("#fde68a");
   if (pattern === "fried") baseCol.set("#eab308");
@@ -282,7 +330,9 @@ export function derivePhysicsFromFood(
   }
 
   const innerCol = new THREE.Color("#fffbeb");
-  if (spicy >= 0.5) {
+  if (pattern === "tteok") {
+    innerCol.set("#ffffff"); // 뽀얀 쌀떡 속살
+  } else if (spicy >= 0.5) {
     innerCol.set("#fde047").lerp(new THREE.Color("#fb923c"), spicy * 0.6);
   } else if (pattern === "meat") {
     innerCol.set("#fb7185"); // 선홍빛 육즙 속살
@@ -302,7 +352,7 @@ export function derivePhysicsFromFood(
         : 0;
 
   const hardness = THREE.MathUtils.clamp(
-    crispy * 0.75 + (pattern === "meat" ? 0.25 : 0) - soupy * 0.2,
+    crispy * 0.75 + (pattern === "meat" ? 0.22 : 0) - soupy * 0.2,
     0.08,
     0.92,
   );
@@ -310,7 +360,7 @@ export function derivePhysicsFromFood(
   const fluidity = THREE.MathUtils.clamp(soupy * 0.95, 0, 1);
   const squish = THREE.MathUtils.clamp(
     0.5 +
-      (pattern === "bread" ? 0.35 : 0) +
+      (pattern === "bread" || pattern === "tteok" ? 0.35 : 0) +
       soupy * 0.35 +
       sweet * 0.15 -
       crispy * 0.35,
@@ -319,13 +369,15 @@ export function derivePhysicsFromFood(
   );
 
   const patternStretchBonus =
-    pattern === "noodle"
-      ? 0.35
-      : pattern === "bread"
-        ? 0.25
-        : pattern === "meat"
-          ? 0.2
-          : 0;
+    pattern === "tteok"
+      ? 0.42
+      : pattern === "noodle"
+        ? 0.35
+        : pattern === "bread"
+          ? 0.25
+          : pattern === "meat"
+            ? 0.2
+            : 0;
   const chewinessFactor = THREE.MathUtils.clamp(
     oily * 0.4 + sweet * 0.25 + salty * 0.2 + patternStretchBonus,
     0.2,
@@ -364,7 +416,8 @@ export function derivePhysicsFromFood(
     shake,
     fluidity,
     inflate: THREE.MathUtils.clamp(
-      (pattern === "bread" ? 0.55 : 0.15) + oily * 0.4,
+      (pattern === "bread" ? 0.55 : pattern === "tteok" ? 0.25 : 0.15) +
+        oily * 0.4,
       0.1,
       0.95,
     ),
@@ -374,21 +427,25 @@ export function derivePhysicsFromFood(
     roughness:
       pattern === "bread"
         ? 0.55
-        : pattern === "rice"
-          ? 0.22
-          : THREE.MathUtils.clamp(
-              0.08 + crispy * 0.36 - soupy * 0.15,
-              0.04,
-              0.55,
-            ),
+        : pattern === "tteok"
+          ? 0.08
+          : pattern === "rice"
+            ? 0.22
+            : THREE.MathUtils.clamp(
+                0.08 + crispy * 0.36 - soupy * 0.15,
+                0.04,
+                0.55,
+              ),
     glossiness:
       pattern === "bread"
         ? 0.25
-        : THREE.MathUtils.clamp(
-            0.6 + soupy * 0.4 + oily * 0.3 - crispy * 0.2,
-            0.35,
-            1.0,
-          ),
+        : pattern === "tteok"
+          ? 0.95
+          : THREE.MathUtils.clamp(
+              0.6 + soupy * 0.4 + oily * 0.3 - crispy * 0.2,
+              0.35,
+              1.0,
+            ),
   };
 }
 
@@ -426,6 +483,7 @@ const PATTERN_LABELS: Record<SurfacePatternType, string> = {
   meat: "3D 입체 근섬유 육질 블록",
   rice: "3D 입체 쌀알 군집 구조",
   noodle: "3D 입체 면발 다발 구조",
+  tteok: "3D 탱글쫀득 떡 질감 구조",
   bread: "3D 폭신한 에어포켓 빵 반죽",
   fried: "3D 바삭한 크리스피 튀김 껍질",
   broth: "3D 출렁이는 국물 파동 블록",
@@ -480,30 +538,123 @@ function drawSurfacePattern(
   bumpCtx.fillRect(offsetX, 0, width, height);
 
   if (pattern === "meat") {
-    // 육질 마블링 및 시어링 그릴 결
-    for (let i = 0; i < 95; i++) {
-      const y = (i / 95) * height;
+    // 개선된 육질 텍스처: 과장된 물결 줄무늬 대신 노릇한 구움 그라데이션 + 미세한 살코기 결 + 자연스러운 마블링 지방 + 은은한 그릴 시어링
+    let seed = 55;
+    const rand = () => {
+      seed = (seed * 16807) % 2147483647;
+      return (seed - 1) / 2147483646;
+    };
+
+    const meatGrad = colorCtx.createRadialGradient(
+      offsetX + width * 0.5,
+      height * 0.5,
+      60,
+      offsetX + width * 0.5,
+      height * 0.5,
+      width * 0.75,
+    );
+    meatGrad.addColorStop(0, lightHex);
+    meatGrad.addColorStop(0.65, baseColorHex);
+    meatGrad.addColorStop(1, darkHex);
+    colorCtx.fillStyle = meatGrad;
+    colorCtx.fillRect(offsetX, 0, width, height);
+
+    // 1) 미세하고 잔잔한 살코기 근섬유 결
+    for (let i = 0; i < 140; i++) {
+      const y = (i / 140) * height;
       colorCtx.beginPath();
       bumpCtx.beginPath();
-      for (let x = 0; x <= width; x += 20) {
-        const wave =
-          Math.sin(x * 0.02 + i * 0.6) * 16 + Math.cos(x * 0.045 - i) * 7;
+      for (let x = 0; x <= width; x += 24) {
+        const dy = Math.sin(x * 0.015 + i * 0.45) * 4.5;
         if (x === 0) {
-          colorCtx.moveTo(offsetX + x, y + wave);
-          bumpCtx.moveTo(offsetX + x, y + wave);
+          colorCtx.moveTo(offsetX + x, y + dy);
+          bumpCtx.moveTo(offsetX + x, y + dy);
         } else {
-          colorCtx.lineTo(offsetX + x, y + wave);
-          bumpCtx.lineTo(offsetX + x, y + wave);
+          colorCtx.lineTo(offsetX + x, y + dy);
+          bumpCtx.lineTo(offsetX + x, y + dy);
         }
       }
       colorCtx.strokeStyle =
-        i % 4 === 0 ? "rgba(255, 235, 230, 0.55)" : darkHex;
-      colorCtx.lineWidth = i % 4 === 0 ? 5.5 : 2.5;
+        i % 3 === 0 ? "rgba(55, 14, 5, 0.16)" : "rgba(255, 215, 205, 0.11)";
+      colorCtx.lineWidth = 1.6;
       colorCtx.stroke();
 
-      bumpCtx.strokeStyle = i % 2 === 0 ? "#c8c8c8" : "#404040";
-      bumpCtx.lineWidth = 4;
+      bumpCtx.strokeStyle = i % 2 === 0 ? "#8e8e8e" : "#727272";
+      bumpCtx.lineWidth = 2;
       bumpCtx.stroke();
+    }
+
+    // 2) 불규칙하게 뻗어나가는 마블링 지방 줄기
+    for (let v = 0; v < 24; v++) {
+      let vx = offsetX + rand() * width;
+      let vy = rand() * height;
+      colorCtx.beginPath();
+      bumpCtx.beginPath();
+      colorCtx.moveTo(vx, vy);
+      bumpCtx.moveTo(vx, vy);
+      const steps = 6 + Math.floor(rand() * 8);
+      for (let s = 0; s < steps; s++) {
+        vx += (rand() - 0.42) * 30;
+        vy += (rand() - 0.5) * 18;
+        colorCtx.lineTo(vx, vy);
+        bumpCtx.lineTo(vx, vy);
+      }
+      colorCtx.strokeStyle = "rgba(255, 242, 236, 0.46)";
+      colorCtx.lineWidth = 1.2 + rand() * 2.2;
+      colorCtx.lineCap = "round";
+      colorCtx.stroke();
+
+      bumpCtx.strokeStyle = "#a4a4a4";
+      bumpCtx.lineWidth = 2;
+      bumpCtx.stroke();
+    }
+
+    // 3) 은은한 사선 그릴 시어링 자국
+    for (let g = -2; g < 8; g++) {
+      const startY = g * 145;
+      colorCtx.beginPath();
+      bumpCtx.beginPath();
+      colorCtx.moveTo(offsetX, startY);
+      colorCtx.lineTo(offsetX + width, startY + 190);
+      bumpCtx.moveTo(offsetX, startY);
+      bumpCtx.lineTo(offsetX + width, startY + 190);
+
+      colorCtx.strokeStyle = "rgba(35, 10, 4, 0.26)";
+      colorCtx.lineWidth = 11;
+      colorCtx.stroke();
+
+      bumpCtx.strokeStyle = "#585858";
+      bumpCtx.lineWidth = 10;
+      bumpCtx.stroke();
+    }
+  } else if (pattern === "tteok") {
+    // 떡(Tteok): 매끈하고 탱글탱글한 찰떡/가래떡 윤기 그라데이션과 마디 음영
+    const tteokGrad = colorCtx.createRadialGradient(
+      offsetX + width * 0.5,
+      height * 0.5,
+      40,
+      offsetX + width * 0.5,
+      height * 0.5,
+      width * 0.75,
+    );
+    tteokGrad.addColorStop(0, lightHex);
+    tteokGrad.addColorStop(0.7, baseColorHex);
+    tteokGrad.addColorStop(1, darkHex);
+    colorCtx.fillStyle = tteokGrad;
+    colorCtx.fillRect(offsetX, 0, width, height);
+
+    const cols = 3;
+    for (let c = 1; c < cols; c++) {
+      const gx = offsetX + (c / cols) * width;
+      const seamGrad = colorCtx.createLinearGradient(gx - 20, 0, gx + 20, 0);
+      seamGrad.addColorStop(0, "rgba(0,0,0,0)");
+      seamGrad.addColorStop(0.5, "rgba(0,0,0,0.14)");
+      seamGrad.addColorStop(1, "rgba(0,0,0,0)");
+      colorCtx.fillStyle = seamGrad;
+      colorCtx.fillRect(gx - 20, 0, 40, height);
+
+      bumpCtx.fillStyle = "#5c5c5c";
+      bumpCtx.fillRect(gx - 4, 0, 8, height);
     }
   } else if (pattern === "bread") {
     // 빵 크러스트 노릇한 구움색 그라데이션 & 기공(Air-pockets)
@@ -639,14 +790,12 @@ function createCardAtlasTextures(
     colorCtx.strokeStyle = "rgba(255, 255, 255, 0.42)";
     colorCtx.stroke();
 
-    // 노란색 패턴 설명 텍스트 그리던 코드를 완전히 삭제하고,
-    // 음식 이름(Title)을 박스 중앙에 더 큰 폰트(예: 84px)로 꽉 차게 그림
     colorCtx.fillStyle = "#ffffff";
     colorCtx.font =
-      "900 84px -apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif"; // 폰트 크기 확대
+      "900 84px -apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif";
     colorCtx.textAlign = "center";
     colorCtx.textBaseline = "middle";
-    colorCtx.fillText(title, halfW / 2, 130); // 박스 중앙(Y좌표 130)에 배치
+    colorCtx.fillText(title, halfW / 2, 130);
 
     if (stats.length > 0) {
       const rowH = 56;
@@ -738,8 +887,7 @@ function createWispySteamTexture(): THREE.CanvasTexture | null {
 }
 
 /**
- * 1) 기본 3:4 카드 직육면체 및 육질(Meat) / 빵(Bread) / 튀김 알갱이(Fried)의 실제 3D 입체 요철 지오메트리 생성!
- * 단순 텍스처가 아니라 정점(Vertex) 자체가 근육 다발 골짜기, 빵 쿠프(칼집) 볼륨, 엠보싱으로 조각됩니다.
+ * 1) 기본 3:4 카드 직육면체 및 육질(Meat) / 떡(Tteok) / 빵(Bread) / 튀김(Fried)의 실제 3D 입체 요철 지오메트리 생성!
  */
 function createSculpted3DCardGeometry(
   pattern: SurfacePatternType,
@@ -747,7 +895,7 @@ function createSculpted3DCardGeometry(
 ): {
   geometry: THREE.BufferGeometry;
   basePositions: Float32Array;
-  vertexGroupIds: Int16Array; // 면발/근섬유 다발/밥알 그룹 ID
+  vertexGroupIds: Int16Array;
 } {
   if (pattern === "noodle") {
     return build3DNoodleBundleCardGeometry();
@@ -771,7 +919,8 @@ function createSculpted3DCardGeometry(
   const halfW = CARD_WIDTH / 2;
   const halfH = CARD_HEIGHT / 2;
   const halfD = CARD_DEPTH / 2;
-  const bevel = pattern === "bread" ? 0.13 : CARD_BEVEL;
+  const bevel =
+    pattern === "tteok" ? 0.14 : pattern === "bread" ? 0.13 : CARD_BEVEL;
   const innerW = halfW - bevel;
   const innerH = halfH - bevel;
   const innerD = Math.max(0.02, halfD - bevel);
@@ -813,26 +962,39 @@ function createSculpted3DCardGeometry(
 
       let gId = 0;
 
-      // 패턴별 실제 3D 정점 조각(3D Sculpting) 적용!
       if (pattern === "meat") {
-        // 육질(Meat): 사선 방향의 두툼한 3D 근섬유 다발(Muscle Fiber Bundles)과 깊은 칼집 골짜기 조각
-        const fiberCoord = px * 5.2 + py * 2.4 + Math.sin(py * 4.5) * 0.35;
-        gId = Math.floor((fiberCoord + 10) * 1.8) % 16;
-        const fiberRidge = Math.sin(fiberCoord * Math.PI * 1.8);
-        // 근섬유 골짜기는 안으로 깊게 파이고 근육 다발은 볼록하게 튀어나옴
-        const relief =
-          (fiberRidge > 0
-            ? Math.pow(fiberRidge, 0.6) * 0.045
-            : fiberRidge * 0.055) +
-          Math.cos(px * 14 - py * 12) * 0.012;
-        pz += Math.sign(pz || 1) * relief;
+        // 개선된 3D 육질: 과하게 구겨지던 물결을 없애고, 도톰한 스테이크 볼륨 + 자연스러운 고기 결 + 은은한 그릴 홈 조각
+        const steakPillow =
+          Math.max(
+            0,
+            (1 - Math.pow(px / halfW, 4)) * (1 - Math.pow(py / halfH, 4)),
+          ) * 0.032;
+        const grainWave =
+          Math.sin(px * 4.5 + py * 1.8 + Math.sin(py * 3.0) * 0.3) * 0.012;
+        const grillPhase = ((px * 2.4 + py * 1.8) % 0.6 + 0.6) % 0.6;
+        const grillGroove =
+          grillPhase < 0.08
+            ? -Math.sin((grillPhase / 0.08) * Math.PI) * 0.016
+            : 0;
+        gId = Math.floor((px + 2) * 3) % 8;
+        pz += Math.sign(pz || 1) * (steakPillow + grainWave + grillGroove);
+      } else if (pattern === "tteok") {
+        // 떡(Tteok): 3줄의 통통하고 매끈한 가래떡/절편 볼륨이 일체형으로 볼록하게 솟아오른 3D 구조
+        const edgeSoft =
+          Math.max(
+            0,
+            (1 - Math.pow(px / halfW, 2)) * (1 - Math.pow(py / halfH, 4)),
+          );
+        const tteokRibs =
+          Math.abs(Math.cos((px / halfW) * Math.PI * 1.5)) * 0.038 * edgeSoft;
+        gId = Math.floor(((px / halfW + 1) * 1.5)) % 3;
+        pz += Math.sign(pz || 1) * (tteokRibs + edgeSoft * 0.025);
       } else if (pattern === "bread") {
         // 빵(Bread): 가운데가 볼록하게 부푼 식빵/번 볼륨 + 3줄의 깊은 사선 쿠프(칼집) 슬릿 조각
         const edgeFactor =
           (1 - Math.pow(px / halfW, 2)) * (1 - Math.pow(py / halfH, 2));
         const loafPillow = Math.max(0, edgeFactor) * 0.085;
 
-        // 3개의 사선 베이커리 칼집(Score Slashes)
         const diag = px * 1.8 - py * 1.2;
         let slashDepth = 0;
         for (const offset of [-0.55, 0, 0.55]) {
@@ -842,12 +1004,10 @@ function createSculpted3DCardGeometry(
               Math.cos((distToSlash / 0.16) * (Math.PI / 2)) * 0.065;
           }
         }
-        // 빵 표면의 미세한 에어포켓(기공) 엠보싱
         const crumbNoise = Math.sin(px * 18) * Math.cos(py * 18) * 0.012;
         pz += Math.sign(pz || 1) * (loafPillow - slashDepth + crumbNoise);
         gId = Math.floor((diag + 5) * 2) % 8;
       } else if (pattern === "fried") {
-        // 튀김(Fried): 겉면에 울퉁불퉁한 3D 크리스피 튀김옷 입자 요철 조각
         const batterBump =
           Math.sin(px * 22) * Math.cos(py * 22) * 0.022 +
           Math.sin(px * 37 - py * 31) * 0.014;
@@ -884,8 +1044,6 @@ function createSculpted3DCardGeometry(
 
 /**
  * 2) 면(Noodle) 전용 실제 3D 입체 면발 다발 지오메트리 생성!
- * 카드 전체가 28가닥의 통통한 3D 원통형 웨이브 면발(Tubes)들이 겹겹이 얽혀 있는 진짜 3D 구조로 만들어집니다.
- * 당기면 각 면발 가닥(strandId)이 개별적으로 분리되며 쭉 늘어납니다!
  */
 function build3DNoodleBundleCardGeometry(): {
   geometry: THREE.BufferGeometry;
@@ -898,7 +1056,7 @@ function build3DNoodleBundleCardGeometry(): {
   const indices: number[] = [];
 
   const cols = 14;
-  const layers = 2; // 앞뒤 2겹의 입체 면발 층
+  const layers = 2;
   const segsY = 40;
   const radialSegs = 10;
   const tubeRadius = 0.072;
@@ -913,11 +1071,9 @@ function build3DNoodleBundleCardGeometry(): {
       const baseX = ratioX * (CARD_WIDTH - tubeRadius * 2.2);
       const phase = c * 0.85 + layer * 1.7;
 
-      // 면발 1가닥의 3D 웨이브 중심선 및 링 정점 생성
       for (let iy = 0; iy <= segsY; iy++) {
         const ty = iy / segsY;
         const cy = (ty - 0.5) * (CARD_HEIGHT - tubeRadius * 1.5);
-        // 구불구불한 라멘/짜장/우동 면발 웨이브
         const waveX = Math.sin(ty * Math.PI * 5 + phase) * 0.052;
         const waveZ = Math.cos(ty * Math.PI * 5 + phase) * 0.028;
         const centerX = baseX + waveX;
@@ -954,7 +1110,6 @@ function build3DNoodleBundleCardGeometry(): {
         }
       }
 
-      // 면발 튜브 인덱스 연결
       for (let iy = 0; iy < segsY; iy++) {
         for (let ir = 0; ir < radialSegs; ir++) {
           const nextIr = (ir + 1) % radialSegs;
@@ -986,15 +1141,12 @@ function build3DNoodleBundleCardGeometry(): {
 
 /**
  * 3) 밥/쌀(Rice) 전용 실제 3D 입체 밥알 군집 지오메트리 생성!
- * 수백 개의 통통한 3D 캡슐형 쌀알(3D Ellipsoid Rice Grains)들이 카드 표면에 촘촘히 뭉쳐 있는 진짜 3D 밥블록입니다.
- * 만지면 밥알들이 찰기 있게 뭉개지거나 낱알 단위로 들썩거립니다!
  */
 function build3DRiceClusterCardGeometry(): {
   geometry: THREE.BufferGeometry;
   basePositions: Float32Array;
   vertexGroupIds: Int16Array;
 } {
-  // 먼저 안쪽 찰밥 베이스 블록 생성
   const core = createSculpted3DCardGeometry("broth", 0.9);
   const positions = Array.from(core.basePositions);
   const uvs = Array.from(
@@ -1005,7 +1157,6 @@ function build3DRiceClusterCardGeometry(): {
 
   let vertexOffset = positions.length / 3;
 
-  // 단일 3D 쌀알(통통한 타원체) 템플릿
   const grainTemplate = new THREE.SphereGeometry(1, 8, 6);
   const gPos = grainTemplate.attributes.position;
   const gIdx = grainTemplate.index!;
@@ -1016,7 +1167,6 @@ function build3DRiceClusterCardGeometry(): {
     return (seed - 1) / 2147483646;
   };
 
-  // 앞면, 뒷면, 옆면에 380개의 입체 3D 밥알들을 촘촘히 배치
   const grainCount = 380;
   const quat = new THREE.Quaternion();
   const euler = new THREE.Euler();
@@ -1033,7 +1183,6 @@ function build3DRiceClusterCardGeometry(): {
     euler.set((rand() - 0.5) * 0.5, (rand() - 0.5) * 0.5, rand() * Math.PI);
     quat.setFromEuler(euler);
 
-    // 쌀알 크기 (가로 0.048, 길이 0.088, 두께 0.042의 통통한 자포니카 쌀알 비율)
     const rx = 0.048;
     const ry = 0.088;
     const rz = 0.042;
@@ -1375,7 +1524,7 @@ function SensoryCard3D({
 
   const hasCrust = config.crack > 0.05;
 
-  // 1겹: 음식 패턴(면발 다발 / 밥알 군집 / 근섬유 육질 / 폭신한 빵 / 국물)에 따라 실제 3D 입체 지오메트리 생성!
+  // 1겹: 음식 패턴(면발 다발 / 밥알 군집 / 떡 / 근섬유 육질 / 폭신한 빵 / 국물)에 따라 실제 3D 입체 지오메트리 생성!
   const { innerGeo, innerBasePos, innerGroupIds } = useMemo(() => {
     const innerPattern = hasCrust ? "meat" : config.pattern;
     const built = createSculpted3DCardGeometry(innerPattern, 1.55);
@@ -1498,7 +1647,6 @@ function SensoryCard3D({
 
   const spawnParticleBurst = useCallback(
     (localPt: THREE.Vector3) => {
-      // 바삭한 프리셋뿐 아니라 밥(rice)을 누를 때도 입체 밥알이 통통 튀어나가도록 지원!
       if (!hasCrust && config.pattern !== "rice") return;
       shardParticles.forEach((p) => {
         if (p.life <= 0.05 && Math.random() < 0.45) {
@@ -1527,7 +1675,6 @@ function SensoryCard3D({
             (Math.random() - 0.5) * 0.25,
           );
           if (config.pattern === "rice") {
-            // 통통한 3D 쌀알 비율로 튀어나감
             p.scale.set(0.048, 0.088, 0.042);
           } else {
             const s = (0.045 + Math.random() * 0.075) * config.crack;
@@ -1676,13 +1823,6 @@ function SensoryCard3D({
   const spicyFlushTintObj = useMemo(() => new THREE.Color("#ef4444"), []);
   const currentTintObj = useMemo(() => new THREE.Color("#ffffff"), []);
 
-  /**
-   * 패턴별 실제 3D 입체 물성 변형:
-   * - noodle(면): 각 3D 면발 가닥(groupId)이 개별 위상차를 두고 가닥가닥 따로 분리되며 출렁이고 늘어남!
-   * - meat(육질): 당기거나 누르면 3D 근섬유 다발(groupId)들이 고기 결을 따라 양옆으로 쩍 벌어지며 찢어지는 탄성!
-   * - rice(밥): 입체 밥알 군집(groupId)들이 찰기 있게 뭉쳐 따라오면서 알알이 들썩거림!
-   * - bread(빵): 쿠프(칼집) 홈이 넓게 벌어지며 폭신한 메모리폼처럼 깊게 눌렸다 천천히 부풀어 오름!
-   */
   const deformCardPoint = useCallback(
     (
       bx: number,
@@ -1713,8 +1853,10 @@ function SensoryCard3D({
       const effectiveSquish = config.squish * (1 - config.hardness * 0.55);
 
       if (effectiveSquish > 0) {
-        // 빵(bread)은 훨씬 깊고 넓게 폭신하게 눌림
-        const depthMult = config.pattern === "bread" ? 0.34 : 0.24;
+        const depthMult =
+          config.pattern === "bread" || config.pattern === "tteok"
+            ? 0.34
+            : 0.24;
         const dent =
           smoothInf * pressDepth.current * effectiveSquish * depthMult;
         const bulge =
@@ -1736,9 +1878,7 @@ function SensoryCard3D({
         z += rz * (bulge + wave);
       }
 
-      // 패턴별 고유 3D 구조 물리 반응!
       if (config.pattern === "noodle") {
-        // [3D 면발 물리]: 가닥(groupId)마다 서로 다른 탄성 계수와 출렁임을 가져 당길 때 면발들이 가닥별로 갈라지며 늘어남!
         const strandVariance = 0.65 + ((groupId * 7) % 11) * 0.065;
         const strandPull =
           Math.pow(inf, 1.2) * (0.45 + config.viscosity * 0.9) * strandVariance;
@@ -1746,29 +1886,37 @@ function SensoryCard3D({
         y += viscousDrag.current.y * strandPull;
         z += viscousDrag.current.z * strandPull;
 
-        // 당기거나 만질 때 면발들이 좌우/앞뒤로 풀리며 꿈틀거리는 3D 웨이브
         const slither =
           Math.sin(by * 6.5 - time * 9 + groupId * 1.3) *
           rippleEnergy.current * 0.06 * dragCalm *
           smoothInf;
         x += slither;
         z += Math.cos(by * 5.5 + groupId) * slither * 0.65;
+      } else if (config.pattern === "tteok") {
+        // [3D 떡 물리]: 치즈·가래떡처럼 쫀득하게 길게 늘어나면서 당겨진 허리 부분이 부드럽게 수축(Necking)됨
+        const tteokPull =
+          Math.pow(inf, 1.15) * (0.48 + config.viscosity * 0.95);
+        x += viscousDrag.current.x * tteokPull;
+        y += viscousDrag.current.y * tteokPull;
+        z += viscousDrag.current.z * tteokPull;
+
+        const stretchLen = viscousDrag.current.length();
+        const neckPinch =
+          Math.sin(inf * Math.PI) * Math.min(0.22, stretchLen * 0.14);
+        x -= (bx - viscousHit.current.x) * neckPinch;
       } else if (config.pattern === "meat") {
-        // [3D 육질 물리]: 당기거나 누를 때 근섬유 다발(groupId)들이 결 수직 방향으로 서로 벌어지며 쫄깃하게 저항함!
-        const pull = Math.pow(inf, 1.25) * (0.35 + config.viscosity * 0.8);
+        // [3D 육질 물리]: 뾰족하게 찢어지던 현상을 없애고, 고기 결을 따라 묵직하고 쫄깃하게 늘어나는 탄성 적용
+        const pull = Math.pow(inf, 1.25) * (0.36 + config.viscosity * 0.8);
         x += viscousDrag.current.x * pull;
         y += viscousDrag.current.y * pull;
         z += viscousDrag.current.z * pull;
 
-        const fiberSpread =
-          (groupId % 2 === 0 ? 1 : -1) *
-          (viscousDrag.current.length() * 0.12 + pressDepth.current * 0.05) *
+        const grainTension =
+          Math.sin(bx * 5.0 + by * 2.5) *
+          (viscousDrag.current.length() * 0.035 + pressDepth.current * 0.015) *
           smoothInf;
-        x += fiberSpread * 0.5;
-        y -= fiberSpread * 0.85;
-        z += Math.abs(fiberSpread) * 0.4;
+        z += Math.sign(bz || 1) * grainTension;
       } else if (config.pattern === "rice") {
-        // [3D 밥알 군집 물리]: 밥알 그룹(groupId > 0)들이 끈적한 전분 찰기로 뭉쳐 따라오면서 낱알들이 오밀조밀 들썩거림!
         const grainLag = groupId > 0 ? 0.75 + (groupId % 7) * 0.07 : 1.0;
         const pull =
           Math.pow(inf, 1.3) * (0.35 + config.viscosity * 0.85) * grainLag;
@@ -1787,7 +1935,6 @@ function SensoryCard3D({
           z += Math.sign(bz || 1) * popOut * 1.4;
         }
       } else if (config.pattern === "bread") {
-        // [3D 빵 반죽 물리]: 당기거나 누를 때 빵 윗면의 쿠프(칼집)가 옆으로 벌어지며 폭신하게 부풀어 오름!
         const pull = Math.pow(inf, 1.2) * (0.38 + config.viscosity * 0.85);
         x += viscousDrag.current.x * pull;
         y += viscousDrag.current.y * pull;
@@ -1830,9 +1977,8 @@ function SensoryCard3D({
     const isInteracting = interactionMode.current === "interact";
     const activeLevel = Math.max(value / 100, touchHeat.current);
 
-    // 빵(bread)은 메모리폼 반죽처럼 천천히 폭신하게 복원되고, 육질(meat)은 탱글하게 복원됨
     const baseRestore =
-      config.pattern === "bread"
+      config.pattern === "bread" || config.pattern === "tteok"
         ? 1.8
         : THREE.MathUtils.lerp(10.0, 1.8, config.viscosity);
     const followSpeed = THREE.MathUtils.lerp(15.0, 4.5, config.viscosity);
@@ -1911,7 +2057,7 @@ function SensoryCard3D({
       }
     }
 
-    // [1겹] 실제 3D 입체 지오메트리(면발 다발 / 밥알 군집 / 근섬유 육질 / 폭신한 빵) 정점 업데이트
+    // [1겹] 실제 3D 입체 지오메트리 정점 업데이트
     if (innerFleshRef.current) {
       const posAttr = innerGeo.attributes.position as THREE.BufferAttribute;
       const arr = posAttr.array as Float32Array;
@@ -2114,7 +2260,7 @@ function SensoryCard3D({
       </mesh>
 
       <group ref={groupRef} onPointerDown={handleModelPointerDown}>
-        {/* 1겹: 3D 입체 구조 본체 (3D 면발 다발 / 3D 밥알 군집 / 3D 근섬유 육질 / 3D 쿠프 식빵 / 속살) */}
+        {/* 1겹: 3D 입체 구조 본체 */}
         <mesh ref={innerFleshRef} geometry={innerGeo} castShadow receiveShadow>
           <meshPhysicalMaterial
             ref={innerMatRef}
@@ -2222,7 +2368,6 @@ function SensoryCard3D({
 }
 
 function FoodLabel({ food }: { food: Food }) {
-  // 표시할 상위 음식 스탯 추출 (값이 0보다 큰 스탯들)
   const foodStats = useMemo(() => {
     return (Object.entries(food.tags) as Array<[Tag, number]>)
       .filter(([, v]) => v > 0)
@@ -2231,14 +2376,12 @@ function FoodLabel({ food }: { food: Food }) {
 
   return (
     <div className="flex flex-col justify-between h-[285px] p-3.5 rounded-2xl text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.65)]">
-      {/* 상단: 안내 문구를 제거하고 폰트 크기를 키운 음식 이름 박스 */}
       <div className="text-center bg-black/40 backdrop-blur-md rounded-xl py-3 px-3 border border-white/25 flex items-center justify-center">
         <h2 className="text-3xl font-black tracking-tight leading-tight">
           {food.name}
         </h2>
       </div>
 
-      {/* 하단: 음식 스탯 게이지 & 뱃지 */}
       <div className="bg-black/45 backdrop-blur-md rounded-xl p-2.5 border border-white/15 flex flex-col gap-1.5">
         {foodStats.length > 0 ? (
           foodStats.map(([tag, val]) => {
