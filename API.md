@@ -16,7 +16,17 @@
 {"requestId":"추천별 UUID","tasteScores":{"spicy":0.2,"sweet":0.1,"salty":0.3,"oily":0.5,"soupy":0,"crispy":0.5}}
 ```
 
-서버는 기존 음식 카드의 20개 메뉴와 코사인 유사도를 사용해 상위 5개를 저장·반환합니다.
+서버는 추천 후보 49개와 코사인 유사도를 사용해 상위 5개를 저장·반환합니다. 상호작용 카드 20개는 그대로이며, 추천 전용 후보는 `lib/food-catalog.ts`에서 관리합니다. 기존 기록은 변경하지 않고 새 추천 요청부터 반영합니다.
+
+추가 메뉴의 6가지 감각 점수는 주관적인 MVP 초깃값으로, 팀 검토 후 조정할 수 있습니다. `interactionMs` 방식에도 추가 후보를 반영하되 기존 메뉴 ID와 상위 3개 응답 형식은 유지합니다.
+
+안암 메뉴 참고 자료 (2026-10-31 확인):
+- 참치김밥·치즈라볶이: [이공김밥 안암본점](https://www.koreatriptips.com/dining/2839255.html)
+- 설렁탕·수육: [동우설렁탕 본점](https://www.ktourmap.com/spotDetails.jsp?contentId=2839112)
+- 꿔바로우: [용초수](https://www.diningcode.com/profile.php?rid=gi31dlTbKUTQ)
+- 토마토계란볶음면: [용초수 방문 기록](https://sensack.tistory.com/entry/안암역-맛집-용초수-꿔바로우)
+
+식당 자료는 메뉴 후보 선정에만 사용했습니다. 참치김밥·치즈라볶이·토마토계란볶음면은 각각 김밥·라볶이·볶음면으로 일반화하고, 새우볶음밥은 볶음밥으로 표시합니다. 간장치킨은 기존 치킨 후보로 통합합니다. 식당별 맛을 실측한 점수나 실시간 판매·영업 정보는 아니며, API는 기존처럼 음식 이름을 반환합니다.
 `score`는 0~100 유사도 점수입니다. 응답의 `inputKind`는 `tasteScores`,
 `mode`는 `cosine`이며 `interactionMs`와 `totalInteractionMs`는 null입니다.
 원래 점수는 `tasteScores`, 합계로 정규화한 값은 `ratios`에 저장합니다.

@@ -1,4 +1,4 @@
-import { FOODS } from "../../foods";
+import { RECOMMENDATION_FOODS } from "@/lib/food-catalog";
 import { TAGS, rank, type Taste } from "../../taste";
 
 // 받는 값: { "매운맛": 30, "단맛": 12, ... }  돌려주는 값: { ranking: [...Top 5] }
@@ -13,5 +13,5 @@ export async function POST(req: Request) {
       return [t, Number.isFinite(v) && v > 0 ? v : 0];
     }),
   ) as Taste;
-  return Response.json({ ranking: rank(taste, FOODS) });
+  return Response.json({ ranking: rank(taste, RECOMMENDATION_FOODS) });
 }

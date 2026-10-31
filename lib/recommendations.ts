@@ -1,4 +1,4 @@
-import { FOODS } from "@/app/food-card/foods";
+import { ADDITIONAL_FOODS, RECOMMENDATION_FOODS } from "./food-catalog";
 import { rank, type Taste } from "@/app/food-card/taste";
 
 export const sensationLabels = {
@@ -32,7 +32,11 @@ const menus: Menu[] = [
 ];
 
 export function recommendMenus(ratios: SensationValues) {
-  return menus.map((menu) => {
+  const additionalMenus: Menu[] = ADDITIONAL_FOODS
+    .filter(food => !menus.some(menu => menu.name === food.name))
+    .map(food => ({ menuId: food.id, name: food.name,
+      sensations: Object.fromEntries(sensationKeys.map(key => [key, food.tags[sensationLabels[key]] * 100])) as SensationValues }));
+  return [...menus, ...additionalMenus].map((menu) => {
     const contributions = sensationKeys.map((key) => ({
       key,
       value: ratios[key] * menu.sensations[key],
@@ -53,10 +57,10 @@ export function recommendMenus(ratios: SensationValues) {
     .slice(0, 3).map((menu, index) => ({ ...menu, rank: index + 1, score: Math.round(menu.score * 100) / 100 }));
 }
 
-// 음식 카드 화면의 기존 코사인 유사도와 20개 메뉴 목록을 유지합니다.
+// 카드 구성과 독립적인 추천 후보에 기존 코사인 유사도를 적용합니다.
 export function recommendFoodCards(scores: SensationValues) {
   const taste = Object.fromEntries(sensationKeys.map((key) => [sensationLabels[key], scores[key]])) as Taste;
-  return rank(taste, FOODS).map((food, index) => ({
+  return rank(taste, RECOMMENDATION_FOODS).map((food, index) => ({
     menuId: food.id, name: food.name, rank: index + 1,
     score: Math.round(food.score * 10000) / 100,
     matchedSensations: sensationKeys.filter((key) => scores[key] > 0 && food.tags[sensationLabels[key]] > 0),
