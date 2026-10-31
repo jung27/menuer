@@ -65,6 +65,11 @@ export async function getCustomFood(userId: string, id: string) {
   if (!record) throw new AuthError(404, "FOOD_NOT_FOUND", "음식을 찾을 수 없어요.");
   return publicFood(record);
 }
+export async function deleteCustomFood(userId: string, id: string) {
+  checkId(id);
+  const result = await (await collection()).deleteOne({ _id: id, userId });
+  if (!result.deletedCount) throw new AuthError(404, "FOOD_NOT_FOUND", "음식을 찾을 수 없어요.");
+}
 export async function createCustomFood(userId: string, body: unknown) {
   const food = input(body), now = new Date();
   const record = { ...food, _id: randomUUID(), userId, recommendationEnabled: true, published: false, createdAt: now, updatedAt: now };

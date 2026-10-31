@@ -120,10 +120,38 @@ try {
   assert.equal(republished.body.food.publicId, publicId);
   assert.equal((await call(`/api/public-foods/${publicId}/import`, sessions[1], "POST")).body.food.id, copy.id);
   assert.equal((await call(`/api/custom-foods/${id}/settings`, sessions[0], "PATCH", { recommendationEnabled: true })).body.food.published, true);
+  // Deleting an imported copy allows a fresh import without affecting its original.
+  assert.equal((await call(`/api/custom-foods/${copy.id}`, sessions[1], "DELETE")).status, 200);
+  assert.equal((await call(`/api/custom-foods/${copy.id}`, sessions[1])).status, 404);
+  assert.equal((await call(`/api/public-foods/${publicId}`, guest)).status, 200);
+  const reimport = await call(`/api/public-foods/${publicId}/import`, sessions[1], "POST");
+  assert.equal(reimport.status, 201);
+  assert.notEqual(reimport.body.food.id, copy.id);
+  // Ownership and origin checks protect deletion, including when a food is public.
+  assert.equal((await call(`/api/custom-foods/${id}`, guest, "DELETE")).status, 401);
+  assert.equal((await call(`/api/custom-foods/${id}`, sessions[1], "DELETE")).status, 404);
+  assert.equal((await call(`/api/custom-foods/${id}`, sessions[0], "DELETE", undefined, { Origin: "https://other.invalid" })).status, 403);
+  assert.equal((await call(`/api/custom-foods/${id}`, sessions[0], "DELETE", undefined, { "Sec-Fetch-Site": "cross-site" })).status, 403);
+  assert.equal((await call("/api/custom-foods/invalid", sessions[0], "DELETE")).status, 404);
+  assert.equal((await call(`/api/custom-foods/${publicId}`, sessions[0], "DELETE")).status, 404);
+  assert.equal((await call(`/api/custom-foods/${id}`, sessions[0])).status, 200);
+  assert.equal((await call(`/api/custom-foods/${id}`, sessions[0], "DELETE")).body.deleted, true);
+  assert.equal((await call(`/api/custom-foods/${id}`, sessions[0], "DELETE")).status, 404);
+  assert.equal((await call(`/api/custom-foods/${id}`, sessions[0])).status, 404);
+  assert.equal((await call(`/api/custom-foods/${id}`, sessions[0], "PATCH", draft)).status, 404);
+  assert.equal((await call(`/api/custom-foods/${id}/settings`, sessions[0], "PATCH", { published: true })).status, 404);
+  assert.ok(!(await call("/api/custom-foods", sessions[0])).body.foods.some(food => food.id === id));
+  assert.equal((await call(`/api/public-foods/${publicId}`, guest)).status, 404);
+  assert.equal((await call(`/api/public-foods?q=${encodeURIComponent(draft.name)}`, guest)).body.foods.length, 0);
+  assert.equal((await call(`/api/public-foods/${publicId}/import`, sessions[1], "POST")).status, 404);
+  assert.ok(!(await recommend(sessions[0])).body.recommendations.some(food => food.menuId === `custom:${id}`));
+  assert.ok(!(await call("/food-card/api/recommend", sessions[0], "POST", draft.tags)).body.ranking.some(food => food.id === `custom:${id}`));
+  assert.equal((await call(`/api/custom-foods/${reimport.body.food.id}`, sessions[1])).body.food.name, draft.name);
+  assert.equal((await call("/api/selections/today", sessions[0])).body.meals.breakfast.name, originalName);
   assert.equal((await call("/api/custom-foods?offset=-1", sessions[0])).status, 400);
   assert.equal((await call("/api/auth/logout", sessions[0], "POST")).status, 200);
   assert.equal((await call("/api/custom-foods", sessions[0])).status, 401);
-  console.log("PASS: food editing, recommendation ON/OFF and ownership, daily sharing, public search, publication cancellation, concurrent import deduplication, independent copies, authentication and validation");
+  console.log("PASS: food editing, recommendation/publication switches, deletion and ownership, preserved history and copies, daily sharing, public search, concurrent import deduplication, authentication and validation");
 } catch (error) {
   console.error("FAIL custom-food tests:", error instanceof assert.AssertionError ? error.message : error.name, error.stack?.split("\n").slice(1, 3).join("\n"));
   process.exitCode = 1;
