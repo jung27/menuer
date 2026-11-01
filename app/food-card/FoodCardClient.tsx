@@ -19,6 +19,7 @@ import SensoryObject, {
   VISIBLE_SENSORY_TAGS,
 } from "@/components/SensoryObject";
 import ShareButton from "@/app/share/ShareButton";
+import useShareFeedbackGroup from "@/features/sharing/useShareFeedbackGroup";
 import Tutorial from "@/components/Tutorial";
 
 const SHAKE_ACCEL = 10;
@@ -234,6 +235,7 @@ function Result({ taste, saved, foods, onRestart, restartPending, restartError }
   restartPending: boolean; restartError: string;
 }) {
   const router = useRouter();
+  const shareFeedback = useShareFeedbackGroup();
   const [selectionContext, setSelectionContext] = useState<{
     recordId: string;
     date: string;
@@ -440,7 +442,9 @@ function Result({ taste, saved, foods, onRestart, restartPending, restartError }
                   <ShareButton
                     data-tutorial={i === 0 ? "result" : undefined}
                     menu={f.name}
-                    className="flex min-h-11 min-w-0 w-full items-center justify-center whitespace-nowrap rounded-xl border border-gray-300 px-2 py-2 text-gray-600"
+                    feedback={shareFeedback.forButton(f.menuId, "result")}
+                    copiedLabel={i === 1 || i === 2 ? "복사됨" : undefined}
+                    className={`flex min-h-11 min-w-0 w-full items-center justify-center whitespace-nowrap rounded-xl border border-gray-300 py-2 text-gray-600 ${i === 1 || i === 2 ? "px-1" : "px-2"}`}
                   />
                 </div>
               </li>

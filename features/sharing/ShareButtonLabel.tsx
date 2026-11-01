@@ -1,6 +1,6 @@
 import type { ShareStatus } from "./useShareFeedbackGroup";
 
-export default function ShareButtonLabel({ label, status, iconOnly = false }: { label: string; status: ShareStatus; iconOnly?: boolean }) {
+export default function ShareButtonLabel({ label, status, iconOnly = false, copiedLabel = "링크 복사됨" }: { label: string; status: ShareStatus; iconOnly?: boolean; copiedLabel?: string }) {
   if (iconOnly) return <>
     <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
       {status === "copied" ? <path d="m5 12 4 4L19 6" strokeWidth="2" /> : <>
@@ -12,7 +12,6 @@ export default function ShareButtonLabel({ label, status, iconOnly = false }: { 
     </svg>
     <span role="status" className="sr-only">{status === "copied" ? "링크를 복사했어요." : status === "failed" ? "복사하지 못했어요. 다시 시도해주세요." : ""}</span>
   </>;
-  const copied = "링크 복사됨", failed = "복사 실패";
-  const text = status === "copied" ? copied : status === "failed" ? failed : label;
+  const text = status === "copied" ? copiedLabel : status === "failed" ? "복사 실패" : label;
   return <span role="status" title={text} className="block min-w-0 max-w-full truncate">{text}</span>;
 }

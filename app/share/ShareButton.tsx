@@ -19,8 +19,9 @@ export default function ShareButton({
   className = "",
   feedback,
   iconOnly = false,
+  copiedLabel,
   ...rest
-}: { menu: string; label?: string; className?: string; feedback?: ShareFeedback; iconOnly?: boolean } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
+}: { menu: string; label?: string; className?: string; feedback?: ShareFeedback; iconOnly?: boolean; copiedLabel?: string } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
   const [nickname, setNickname] = useState("");
   const [localStatus, setLocalStatus] = useState<ShareStatus>("idle");
   const status = feedback?.status ?? localStatus;
@@ -55,7 +56,7 @@ export default function ShareButton({
 
   return (
     <button type="button" title={iconOnly ? `${menu} 공유하기` : undefined} {...rest} onClick={share} className={className} aria-label={`${menu} 공유하기`}>
-      <ShareButtonLabel label={label} status={status} iconOnly={iconOnly} />
+      <ShareButtonLabel label={label} status={status} iconOnly={iconOnly} copiedLabel={copiedLabel} />
     </button>
   );
 }
