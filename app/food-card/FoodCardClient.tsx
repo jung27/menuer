@@ -1,6 +1,7 @@
 "use client";
 import { readApiResponse } from "@/lib/read-api-response";
 import "./recommendation-results.css";
+import "./food-card-selection.css";
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -113,7 +114,7 @@ function Home({ initialFoods }: { initialFoods: Food[] }) {
   const gauge = toGauge(taste);
 
   return (
-    <main className="mx-auto flex w-full min-w-0 max-w-2xl flex-1 flex-col gap-3 overflow-x-clip p-4">
+    <main className="food-card-selection mx-auto flex w-full min-w-0 max-w-2xl flex-1 flex-col gap-3 overflow-x-clip p-4">
       {/* 6대 미각·식감 추천 기준(매운맛·단맛·짠맛·기름짐·국물·바삭함)을 대표 아이콘 중심의 도넛 게이지로 표시 */}
       <ul className="grid grid-cols-6 gap-2 py-1">
         {VISIBLE_SENSORY_TAGS.map((t) => (
@@ -189,13 +190,17 @@ function Home({ initialFoods }: { initialFoods: Food[] }) {
         step="card"
         text={"끌리는 메뉴만 카드를 눌러 보고 당겨 보세요.\n딱히 끌리지 않으면 › 로 넘겨요.\n다 골랐으면 '추천 받기'!"}
       />
-      <button
-        data-tutorial="card"
-        className="rounded-xl bg-accent py-3 font-semibold text-accent-ink shadow-md hover:bg-accent-hover active:scale-[0.99]"
-        onClick={() => setFinished(true)}
-      >
-        추천 받기
-      </button>
+      <div className="food-card-recommend-bar" data-tutorial="card">
+        <div className="food-card-recommend-inner">
+          <button
+            data-tutorial="card"
+            className="food-card-recommend-button rounded-xl bg-accent py-3 font-semibold text-accent-ink shadow-md hover:bg-accent-hover active:scale-[0.99]"
+            onClick={() => setFinished(true)}
+          >
+            추천 받기
+          </button>
+        </div>
+      </div>
     </main>
   );
 }

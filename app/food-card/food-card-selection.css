@@ -1,0 +1,28 @@
+.food-card-selection {
+  --food-card-recommend-button-height: 56px;
+  --food-card-recommend-padding: 12px;
+  --food-card-recommend-height: calc(var(--food-card-recommend-button-height) + var(--food-card-recommend-padding) * 2 + 1px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(var(--food-card-recommend-height) + 16px);
+}
+
+.food-card-recommend-bar {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 30;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  border-top: 1px solid #e6e6e6;
+  background: var(--color-accent-soft);
+}
+
+.food-card-recommend-inner {
+  width: 100%;
+  max-width: var(--container-2xl, 42rem);
+  margin-inline: auto;
+  padding: var(--food-card-recommend-padding) 16px;
+}
+
+.food-card-recommend-button {
+  width: 100%;
+  min-height: var(--food-card-recommend-button-height);
+}
