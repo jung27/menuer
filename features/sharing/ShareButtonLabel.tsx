@@ -3,10 +3,12 @@ import type { ShareStatus } from "./useShareFeedbackGroup";
 export default function ShareButtonLabel({ label, status, iconOnly = false }: { label: string; status: ShareStatus; iconOnly?: boolean }) {
   if (iconOnly) return <>
     <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="18" cy="5" r="3" />
-      <circle cx="6" cy="12" r="3" />
-      <circle cx="18" cy="19" r="3" />
-      <path d="m8.6 10.5 6.8-4M8.6 13.5l6.8 4" />
+      {status === "copied" ? <path d="m5 12 4 4L19 6" strokeWidth="2" /> : <>
+        <circle cx="18" cy="5" r="3" />
+        <circle cx="6" cy="12" r="3" />
+        <circle cx="18" cy="19" r="3" />
+        <path d="m8.6 10.5 6.8-4M8.6 13.5l6.8 4" />
+      </>}
     </svg>
     <span role="status" className="sr-only">{status === "copied" ? "링크를 복사했어요." : status === "failed" ? "복사하지 못했어요. 다시 시도해주세요." : ""}</span>
   </>;
